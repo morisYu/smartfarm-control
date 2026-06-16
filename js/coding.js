@@ -389,7 +389,10 @@ function updateCodePreview(event) {
         
         if (startBlocks.length > 0) {
             // 시작 블록이 있으면, 시작 블록에 연결된 코드만 생성
+            Blockly.JavaScript.init(workspace);
             jsCode = Blockly.JavaScript.blockToCode(startBlocks[0]);
+            
+            Blockly.C.init(workspace);
             let innerCode = Blockly.C.blockToCode(startBlocks[0]) || '';
             
             cCode = `void setup() {\n  Serial.begin(9600);\n}\n\nvoid loop() {\n${innerCode.trim() ? innerCode.split('\\n').map(line => '  ' + line).join('\\n') : '  // 코드를 조립하세요'}\n}\n`;

@@ -3,7 +3,7 @@
  * 메인 애플리케이션 로직 (UI 이벤트 바인딩 및 데이터 파싱)
  */
 import avrbro from 'https://esm.sh/avrbro';
-import { serial as polyfillSerial } from 'https://unpkg.com/web-serial-polyfill@1.0.15/dist/index.js';
+import { serial as polyfillSerial } from 'https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js';
 
 // --- Web Serial Polyfill 초기화 및 Override ---
 const isAndroid = /Android/i.test(navigator.userAgent);
