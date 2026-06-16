@@ -1,0 +1,36 @@
+/* style.css */
+/* Tailwind CDN을 사용하므로 사용자 정의 CSS는 최소화합니다. */
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 색상 선택기(Color Picker) 스타일 다듬기 */
+input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+/* 터미널 로그 스크롤바 커스텀 */
+#serial-log::-webkit-scrollbar {
+    width: 6px;
+}
+#serial-log::-webkit-scrollbar-track {
+    background: #111827; 
+    border-radius: 4px;
+}
+#serial-log::-webkit-scrollbar-thumb {
+    background: #4b5563; 
+    border-radius: 4px;
+}
+#serial-log::-webkit-scrollbar-thumb:hover {
+    background: #6b7280; 
+}
