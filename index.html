@@ -21,6 +21,13 @@
     <script src="https://unpkg.com/blockly@13.0.0/blocks_compressed.js"></script>
     <script src="https://unpkg.com/blockly@13.0.0/javascript_compressed.js"></script>
     <script src="https://unpkg.com/blockly@13.0.0/msg/ko.js"></script>
+    
+    <!-- Web Serial Polyfill (WebUSB 기반 안드로이드 지원) -->
+    <script type="module">
+        import { serial as polyfillSerial } from 'https://unpkg.com/web-serial-polyfill@1.0.15/dist/index.js';
+        window.polyfillSerial = polyfillSerial;
+    </script>
+    
     <!-- Blockly 커스텀 카테고리 (Blockly 로드 후, coding.js 전에 로드) -->
     <script src="js/custom_category.js?v=3"></script>
     <link rel="stylesheet" href="style.css?v=3">

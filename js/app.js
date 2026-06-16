@@ -3,6 +3,22 @@
  * 메인 애플리케이션 로직 (UI 이벤트 바인딩 및 데이터 파싱)
  */
 import avrbro from 'https://esm.sh/avrbro';
+import { serial as polyfillSerial } from 'https://unpkg.com/web-serial-polyfill@1.0.15/dist/index.js';
+
+// --- Web Serial Polyfill 초기화 및 Override ---
+const isAndroid = /Android/i.test(navigator.userAgent);
+if (!navigator.serial || isAndroid) {
+    if (navigator.usb) {
+        Object.defineProperty(navigator, 'serial', {
+            value: polyfillSerial,
+            writable: true,
+            configurable: true
+        });
+        console.log("Web Serial Polyfill (WebUSB) successfully overridden for Android/Compatibility.");
+    } else {
+        console.warn("이 브라우저는 WebUSB를 지원하지 않아 Polyfill을 적용할 수 없습니다.");
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     // 전역 모듈 가져오기
