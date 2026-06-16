@@ -99,25 +99,50 @@ window.SmartFarmSerial = {
         if (this.onDisconnect) this.onDisconnect();
     },
 
+    commandQueue: [],
+    isWriting: false,
+
+    clearQueue: function() {
+        this.commandQueue = [];
+    },
+
     /**
      * 아두이노로 명령어 전송 (핵심 전송 함수)
      * @param {string} cmd 전송할 명령어 문자열 (반드시 \n 포함 여부 확인)
      */
-    sendCommand: async function(cmd) {
+    sendCommand: function(cmd) {
         if (!this.port || !this.port.writable) {
             this.log('전송 실패: 포트가 연결되지 않았습니다. (명령: ' + cmd.trim() + ')');
             return;
         }
 
-        try {
-            const encoder = new TextEncoder();
-            const writer = this.port.writable.getWriter();
-            await writer.write(encoder.encode(cmd));
-            writer.releaseLock();
-            this.log('송신: ' + cmd.trim());
-        } catch (error) {
-            this.log('송신 오류: ' + error.message);
+        this.commandQueue.push(cmd);
+        // 너무 많은 명령어가 쌓여 메모리가 누수되는 것을 방지
+        if (this.commandQueue.length > 50) {
+            this.commandQueue.shift();
         }
+
+        this.processQueue();
+    },
+
+    processQueue: async function() {
+        if (this.isWriting) return;
+        this.isWriting = true;
+
+        while (this.commandQueue.length > 0) {
+            const cmd = this.commandQueue.shift();
+            try {
+                const encoder = new TextEncoder();
+                const writer = this.port.writable.getWriter();
+                await writer.write(encoder.encode(cmd));
+                writer.releaseLock();
+                this.log('송신: ' + cmd.trim());
+            } catch (error) {
+                this.log('송신 오류: ' + error.message);
+            }
+        }
+        
+        this.isWriting = false;
     },
 
     /**
