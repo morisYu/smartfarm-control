@@ -332,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnPumpOn.addEventListener('click', () => {
+        if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
         hw.turnOnPump(0, pumpSpeed.value);
         statusPump.textContent = '가동 중';
         statusPump.classList.replace('bg-gray-200', 'bg-blue-100');
@@ -339,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnPumpOff.addEventListener('click', () => {
+        if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
         hw.turnOffPump();
         statusPump.textContent = '정지';
         statusPump.classList.replace('bg-blue-100', 'bg-gray-200');
@@ -347,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // RGB LED 버튼
     btnColorApply.addEventListener('click', () => {
+        if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
         const hex = colorPicker.value;
         // Hex(#RRGGBB) 문자열을 R, G, B 정수로 변환
         const r = parseInt(hex.slice(1, 3), 16);
@@ -356,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnColorOff.addEventListener('click', () => {
+        if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
         hw.turnOffRgbLed();
     });
 
@@ -369,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnBuzzerOn.addEventListener('click', () => {
+        if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
         hw.turnOnBuzzer(buzzerFreq.value);
         statusBuzzer.textContent = 'ON';
         statusBuzzer.classList.replace('bg-gray-200', 'bg-red-100');
@@ -376,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnBuzzerOff.addEventListener('click', () => {
+        if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
         hw.turnOffBuzzer();
         statusBuzzer.textContent = 'OFF';
         statusBuzzer.classList.replace('bg-red-100', 'bg-gray-200');
@@ -389,6 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     btnBuzzerPlay.addEventListener('click', async () => {
+        if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
         const notes = buzzerMelody.value.trim().toUpperCase().split(/\s+/);
         if (notes.length === 0 || !notes[0]) return;
 
@@ -467,6 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pianoKeys.forEach(btn => {
         btn.addEventListener('click', () => {
+            if (window.isBlocklyRunning) { alert("블록 코딩이 실행 중일 때는 대시보드에서 제어할 수 없습니다."); return; }
             const note = btn.getAttribute('data-note');
             appendNoteToMelody(note);
         });
@@ -635,5 +643,27 @@ document.addEventListener('DOMContentLoaded', () => {
         flashProgressBar.classList.replace('bg-emerald-500', 'bg-blue-600');
         flashProgressBar.classList.replace('bg-red-500', 'bg-blue-600');
         flashStatusText.classList.remove('text-red-600');
+    });
+
+    // 블록 코딩 실행 상태에 따른 액추에이터 제어 버튼 비활성화 (Method 3)
+    window.addEventListener('blockly-run-state-changed', (e) => {
+        const isRunning = e.detail;
+        const actuatorButtons = [
+            btnPumpOn, btnPumpOff, btnColorApply, btnColorOff,
+            btnBuzzerOn, btnBuzzerOff, btnBuzzerPlay,
+            btnAddRest, btnBackspaceNote, btnClearNotes,
+            ...pianoKeys
+        ];
+        
+        actuatorButtons.forEach(btn => {
+            if (btn) {
+                btn.disabled = isRunning;
+                if (isRunning) {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        });
     });
 });

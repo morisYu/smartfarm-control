@@ -33,8 +33,13 @@ window.SmartFarmSerial = {
             if (existingPort) {
                 this.port = existingPort;
             } else {
-                // 사용자에게 포트 선택 창 표시
-                this.port = await navigator.serial.requestPort();
+                // 사용자에게 포트 선택 창 표시 (안드로이드 크롬 호환성을 위한 필터 추가)
+                const filters = [
+                    { usbVendorId: 0x2341 }, // 정품 아두이노 Uno/Nano
+                    { usbVendorId: 0x1a86 }, // 중국산 호환 보드 CH340
+                    { usbVendorId: 0x10c4 }  // CP2102 호환 칩셋
+                ];
+                this.port = await navigator.serial.requestPort({ filters });
             }
             // 기본 아두이노 보드레이트 9600 사용
             await this.port.open({ baudRate: 9600 });

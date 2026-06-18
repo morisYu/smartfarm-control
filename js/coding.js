@@ -437,6 +437,8 @@ async function runCode() {
     const btnStop = document.getElementById('btn-stop-code');
     
     isRunning = true;
+    window.isBlocklyRunning = true;
+    window.dispatchEvent(new CustomEvent('blockly-run-state-changed', { detail: true }));
     btnRun.classList.add('hidden');
     btnStop.classList.remove('hidden');
 
@@ -474,6 +476,8 @@ async function runCode() {
         alert("코드를 파싱하는 중 오류가 발생했습니다.");
     } finally {
         isRunning = false;
+        window.isBlocklyRunning = false;
+        window.dispatchEvent(new CustomEvent('blockly-run-state-changed', { detail: false }));
         btnRun.classList.remove('hidden');
         btnStop.classList.add('hidden');
         window.__isBlocklyCancelled = true;
@@ -503,6 +507,8 @@ function stopCode() {
     window.SmartFarmHW.turnOffBuzzer();
     
     isRunning = false;
+    window.isBlocklyRunning = false;
+    window.dispatchEvent(new CustomEvent('blockly-run-state-changed', { detail: false }));
     document.getElementById('btn-run-code').classList.remove('hidden');
     document.getElementById('btn-stop-code').classList.add('hidden');
 }
