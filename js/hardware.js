@@ -22,6 +22,18 @@ window.SmartFarmHW = {
     /** ===================================
      *  RGB LED 제어
      *  =================================== */
+    
+    getRgbType: function() {
+        const saved = localStorage.getItem('smartfarm_pins');
+        if (saved) {
+            try {
+                const config = JSON.parse(saved);
+                return config.rgbType || 'cathode';
+            } catch(e) {}
+        }
+        return 'cathode';
+    },
+
     /**
      * RGB LED 색상 지정 (PWM)
      * @param {number} r 빨강 (0~255)
@@ -34,12 +46,22 @@ window.SmartFarmHW = {
         g = Math.max(0, Math.min(255, Math.floor(g)));
         b = Math.max(0, Math.min(255, Math.floor(b)));
         
-        // NEO: -> RGB: 로 변경 (아두이노 코드에 맞춰 파싱 필요)
+        // 공통 양극(Common Anode)일 경우 값 반전
+        if (this.getRgbType() === 'anode') {
+            r = 255 - r;
+            g = 255 - g;
+            b = 255 - b;
+        }
+        
         window.SmartFarmSerial.sendCommand(`RGB:${r},${g},${b}\n`);
     },
     
     turnOffRgbLed: function() {
-        window.SmartFarmSerial.sendCommand("RGB:0,0,0\n");
+        if (this.getRgbType() === 'anode') {
+            window.SmartFarmSerial.sendCommand("RGB:255,255,255\n");
+        } else {
+            window.SmartFarmSerial.sendCommand("RGB:0,0,0\n");
+        }
     },
 
     /** ===================================

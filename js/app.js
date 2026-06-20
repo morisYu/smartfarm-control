@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
         buzzer: document.getElementById('pin-buzzer'),
         rgbR: document.getElementById('pin-rgb-r'),
         rgbG: document.getElementById('pin-rgb-g'),
-        rgbB: document.getElementById('pin-rgb-b')
+        rgbB: document.getElementById('pin-rgb-b'),
+        rgbType: document.getElementById('pin-rgb-type')
     };
 
     // 상태 변수
@@ -306,6 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             setTimeout(() => {
                                 if (isConnected) {
                                     hw.sendPinConfig(config);
+                                    setTimeout(() => { hw.turnOffRgbLed(); }, 100);
                                     console.log("자동 핀 동기화 완료:", config);
                                 }
                             }, 2500);
@@ -531,7 +533,8 @@ document.addEventListener('DOMContentLoaded', () => {
             buzzer: pinInputs.buzzer.value.trim(),
             rgbR: pinInputs.rgbR.value.trim(),
             rgbG: pinInputs.rgbG.value.trim(),
-            rgbB: pinInputs.rgbB.value.trim()
+            rgbB: pinInputs.rgbB.value.trim(),
+            rgbType: pinInputs.rgbType.value
         };
 
         // 로컬 스토리지에 저장 (새로고침 시 유지)
@@ -540,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 아두이노로 설정 전송
         if (isConnected) {
             hw.sendPinConfig(config);
+            setTimeout(() => { hw.turnOffRgbLed(); }, 100);
             alert('핀 설정이 아두이노로 전송되었습니다.');
         } else {
             alert('설정은 저장되었으나 시리얼이 연결되지 않아 전송되지 않았습니다. 연결 후 다시 전송해주세요.');
