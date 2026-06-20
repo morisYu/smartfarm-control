@@ -247,81 +247,293 @@ jsGen.forBlock['sf_forever'] = function(block) {
 
 Blockly.C = new Blockly.Generator('C');
 Blockly.C.forBlock = Blockly.C.forBlock || Blockly.C;
-Blockly.C.ORDER_ATOMIC = 0;
-Blockly.C.ORDER_NONE = 99;
+Blockly.C.ORDER_ATOMIC        = 0;
+Blockly.C.ORDER_UNARY_PREFIX  = 2;
+Blockly.C.ORDER_MULTIPLICATIVE= 5;
+Blockly.C.ORDER_ADDITIVE      = 6;
+Blockly.C.ORDER_RELATIONAL    = 8;
+Blockly.C.ORDER_EQUALITY      = 9;
+Blockly.C.ORDER_LOGICAL_AND   = 13;
+Blockly.C.ORDER_LOGICAL_OR    = 14;
+Blockly.C.ORDER_NONE          = 99;
 
-Blockly.C.init = function(workspace) {};
+Blockly.C.init = function(workspace) {
+    // 코드 생성 시작 시 루프 변수 카운터 초기화 (i, j, k, l, m ...)
+    Blockly.C._loopVarIndex = 0;
+};
+// 루프 변수명 생성 헬퍼: 0→'i', 1→'j', 2→'k', ..., 17→'z', 18→'i2', ...
+Blockly.C._getLoopVar = function() {
+    const BASE = 'ijklmnopqrstuvwxyz';
+    const idx  = Blockly.C._loopVarIndex++;
+    const letter = BASE[idx % BASE.length];
+    const suffix = Math.floor(idx / BASE.length) || '';
+    return letter + suffix;
+};
 Blockly.C.finish = function(code) {
     return `void setup() {\n  // 핀 초기화 코드는 여기에 위치합니다.\n}\n\nvoid loop() {\n${code}}\n`;
 };
-
 Blockly.C.scrub_ = function(block, code, opt_thisOnly) {
     const nextBlock = block.nextConnection && block.nextConnection.targetBlock();
     const nextCode = opt_thisOnly ? '' : Blockly.C.blockToCode(nextBlock);
     return code + nextCode;
 };
 
-// 숫자 블록
+// ── 숫자 ──────────────────────────────────────────────────────────────────
 Blockly.C.forBlock['math_number'] = function(block) {
-    const code = Number(block.getFieldValue('NUM'));
-    return [code, Blockly.C.ORDER_ATOMIC];
+    return [Number(block.getFieldValue('NUM')), Blockly.C.ORDER_ATOMIC];
 };
 
-// 변수
+Blockly.C.forBlock['math_arithmetic'] = function(block) {
+    const OPS = { ADD:['+',Blockly.C.ORDER_ADDITIVE], MINUS:['-',Blockly.C.ORDER_ADDITIVE],
+                  MULTIPLY:['*',Blockly.C.ORDER_MULTIPLICATIVE], DIVIDE:['/',Blockly.C.ORDER_MULTIPLICATIVE],
+                  POWER:[null,Blockly.C.ORDER_NONE] };
+    const op = block.getFieldValue('OP');
+    const [operator, order] = OPS[op];
+    const a = Blockly.C.valueToCode(block, 'A', order) || '0';
+    const b = Blockly.C.valueToCode(block, 'B', order) || '0';
+    if (op === 'POWER') return [`pow(${a}, ${b})`, Blockly.C.ORDER_ATOMIC];
+    return [`${a} ${operator} ${b}`, order];
+};
+
+Blockly.C.forBlock['math_single'] = function(block) {
+    const op  = block.getFieldValue('OP');
+    const arg = Blockly.C.valueToCode(block, 'NUM', Blockly.C.ORDER_UNARY_PREFIX) || '0';
+    const MAP = { ROOT:`sqrt(${arg})`, ABS:`abs(${arg})`, NEG:`-${arg}`,
+                  LN:`log(${arg})`, LOG10:`log10(${arg})`, EXP:`exp(${arg})`, POW10:`pow(10,${arg})` };
+    return [MAP[op] || arg, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_trig'] = function(block) {
+    const op  = block.getFieldValue('OP');
+    const arg = Blockly.C.valueToCode(block, 'NUM', Blockly.C.ORDER_NONE) || '0';
+    const MAP = { SIN:`sin((${arg})*PI/180.0)`, COS:`cos((${arg})*PI/180.0)`,
+                  TAN:`tan((${arg})*PI/180.0)`, ASIN:`asin(${arg})*180.0/PI`,
+                  ACOS:`acos(${arg})*180.0/PI`, ATAN:`atan(${arg})*180.0/PI` };
+    return [MAP[op] || arg, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_constant'] = function(block) {
+    const MAP = { PI:'PI', E:'2.71828183', GOLDEN_RATIO:'1.61803399',
+                  SQRT2:'sqrt(2)', SQRT1_2:'sqrt(0.5)', INFINITY:'INFINITY' };
+    return [MAP[block.getFieldValue('CONSTANT')] || '0', Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_number_property'] = function(block) {
+    const num  = Blockly.C.valueToCode(block, 'NUMBER_TO_CHECK', Blockly.C.ORDER_NONE) || '0';
+    const prop = block.getFieldValue('PROPERTY');
+    if (prop === 'DIVISIBLE_BY') {
+        const div = Blockly.C.valueToCode(block, 'DIVISOR', Blockly.C.ORDER_NONE) || '1';
+        return [`((int)(${num})%(int)(${div})==0)`, Blockly.C.ORDER_ATOMIC];
+    }
+    const MAP = { EVEN:`((int)(${num})%2==0)`, ODD:`((int)(${num})%2!=0)`,
+                  POSITIVE:`(${num}>0)`, NEGATIVE:`(${num}<0)` };
+    return [MAP[prop] || 'false', Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_round'] = function(block) {
+    const op  = block.getFieldValue('OP');
+    const arg = Blockly.C.valueToCode(block, 'NUM', Blockly.C.ORDER_NONE) || '0';
+    const MAP = { ROUND:`round(${arg})`, ROUNDUP:`ceil(${arg})`, ROUNDDOWN:`floor(${arg})` };
+    return [MAP[op], Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_on_list'] = function(block) {
+    return [`0 /* math_on_list: 아두이노에서 지원되지 않습니다 */`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_modulo'] = function(block) {
+    const a = Blockly.C.valueToCode(block, 'DIVIDEND', Blockly.C.ORDER_MULTIPLICATIVE) || '0';
+    const b = Blockly.C.valueToCode(block, 'DIVISOR',  Blockly.C.ORDER_MULTIPLICATIVE) || '1';
+    return [`(int)(${a})%(int)(${b})`, Blockly.C.ORDER_MULTIPLICATIVE];
+};
+
+Blockly.C.forBlock['math_constrain'] = function(block) {
+    const val  = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || '0';
+    const low  = Blockly.C.valueToCode(block, 'LOW',   Blockly.C.ORDER_NONE) || '0';
+    const high = Blockly.C.valueToCode(block, 'HIGH',  Blockly.C.ORDER_NONE) || '255';
+    return [`constrain(${val},${low},${high})`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_random_int'] = function(block) {
+    const from = Blockly.C.valueToCode(block, 'FROM', Blockly.C.ORDER_NONE) || '0';
+    const to   = Blockly.C.valueToCode(block, 'TO',   Blockly.C.ORDER_NONE) || '100';
+    return [`random(${from},${to}+1)`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['math_random_float'] = function(block) {
+    return ['((float)random(0,10001)/10000.0)', Blockly.C.ORDER_ATOMIC];
+};
+
+// ── 문자열 ────────────────────────────────────────────────────────────────
+Blockly.C.forBlock['text'] = function(block) {
+    const code = block.getFieldValue('TEXT').replace(/"/g, '\\"');
+    return [`"${code}"`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_join'] = function(block) {
+    const parts = [];
+    for (let i = 0; i < block.itemCount_; i++) {
+        parts.push(Blockly.C.valueToCode(block, 'ADD' + i, Blockly.C.ORDER_NONE) || '""');
+    }
+    if (!parts.length) return ['""', Blockly.C.ORDER_ATOMIC];
+    return [`(${parts.map((p,i)=> i===0 ? `String(${p})` : `+String(${p})`).join('')})`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_append'] = function(block) {
+    const name = block.getFieldValue('VAR');
+    const text = Blockly.C.valueToCode(block, 'TEXT', Blockly.C.ORDER_NONE) || '""';
+    return `${name} += String(${text});\n`;
+};
+
+Blockly.C.forBlock['text_length'] = function(block) {
+    const arg = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || '""';
+    return [`String(${arg}).length()`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_isEmpty'] = function(block) {
+    const arg = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || '""';
+    return [`(String(${arg}).length()==0)`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_indexOf'] = function(block) {
+    const str = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || '""';
+    const sub = Blockly.C.valueToCode(block, 'FIND',  Blockly.C.ORDER_NONE) || '""';
+    return [`String(${str}).indexOf(${sub})`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_charAt'] = function(block) {
+    const str = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || '""';
+    const idx = Blockly.C.valueToCode(block, 'AT',    Blockly.C.ORDER_NONE) || '0';
+    return [`String(${str}).charAt(${idx})`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_getSubstring'] = function(block) {
+    const str = Blockly.C.valueToCode(block, 'STRING', Blockly.C.ORDER_NONE) || '""';
+    const at1 = Blockly.C.valueToCode(block, 'AT1',    Blockly.C.ORDER_NONE) || '0';
+    const at2 = Blockly.C.valueToCode(block, 'AT2',    Blockly.C.ORDER_NONE) || '0';
+    return [`String(${str}).substring(${at1},${at2})`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_changeCase'] = function(block) {
+    const arg = Blockly.C.valueToCode(block, 'TEXT', Blockly.C.ORDER_NONE) || '""';
+    return [`String(${arg}) /* case change not supported in Arduino */`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['text_trim'] = function(block) {
+    const arg = Blockly.C.valueToCode(block, 'TEXT', Blockly.C.ORDER_NONE) || '""';
+    return [`String(${arg}) /* trim not supported in Arduino */`, Blockly.C.ORDER_ATOMIC];
+};
+
+// ── 리스트 (아두이노 배열로 매핑) ─────────────────────────────────────────
+Blockly.C.forBlock['lists_create_with'] = function(block) {
+    const elems = [];
+    for (let i = 0; i < block.itemCount_; i++) {
+        elems.push(Blockly.C.valueToCode(block, 'ADD' + i, Blockly.C.ORDER_NONE) || '0');
+    }
+    return [`{${elems.join(', ')}}`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['lists_repeat'] = function(block) {
+    const item  = Blockly.C.valueToCode(block, 'ITEM', Blockly.C.ORDER_NONE) || '0';
+    const times = Blockly.C.valueToCode(block, 'NUM',  Blockly.C.ORDER_NONE) || '0';
+    return [`/* lists_repeat(${item},${times}) - 아두이노에서 배열을 직접 선언하세요 */`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['lists_length']    = function(block) { return ['0 /* lists_length */', Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['lists_isEmpty']   = function(block) { return ['false /* lists_isEmpty */', Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['lists_indexOf']   = function(block) { return ['0 /* lists_indexOf */', Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['lists_getSublist']= function(block) { return ['0 /* lists_getSublist */', Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['lists_split']     = function(block) { return ['0 /* lists_split */', Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['lists_sort']      = function(block) { return ['0 /* lists_sort */', Blockly.C.ORDER_ATOMIC]; };
+
+Blockly.C.forBlock['lists_getIndex'] = function(block) {
+    const list = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || 'arr';
+    const idx  = Blockly.C.valueToCode(block, 'AT',    Blockly.C.ORDER_NONE) || '0';
+    return [`${list}[${idx}]`, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['lists_setIndex'] = function(block) {
+    const list = Blockly.C.valueToCode(block, 'LIST', Blockly.C.ORDER_NONE) || 'arr';
+    const idx  = Blockly.C.valueToCode(block, 'AT',   Blockly.C.ORDER_NONE) || '0';
+    const val  = Blockly.C.valueToCode(block, 'TO',   Blockly.C.ORDER_NONE) || '0';
+    return `${list}[${idx}] = ${val};\n`;
+};
+
+// ── 변수 ──────────────────────────────────────────────────────────────────
 Blockly.C.forBlock['variables_get'] = function(block) {
     const name = Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
     return [name, Blockly.C.ORDER_ATOMIC];
 };
 Blockly.C.forBlock['variables_set'] = function(block) {
-    const name = Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
-    const argument0 = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_ATOMIC) || '0';
-    return `float ${name} = ${argument0};\n`;
+    const name  = Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const value = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_ATOMIC) || '0';
+    return `float ${name} = ${value};\n`;
 };
 
-// 조건문
+// ── 조건문 ────────────────────────────────────────────────────────────────
 Blockly.C.forBlock['controls_if'] = function(block) {
-    let n = 0;
-    let code = '', branchCode, conditionCode;
+    let n = 0, code = '', branch, cond;
     do {
-        conditionCode = Blockly.C.valueToCode(block, 'IF' + n, Blockly.C.ORDER_NONE) || 'false';
-        branchCode = Blockly.C.statementToCode(block, 'DO' + n);
-        code += (n > 0 ? ' else ' : '') + `if (${conditionCode}) {\n${branchCode}}`;
+        cond   = Blockly.C.valueToCode(block, 'IF' + n, Blockly.C.ORDER_NONE) || 'false';
+        branch = Blockly.C.statementToCode(block, 'DO' + n);
+        code  += (n > 0 ? ' else ' : '') + `if (${cond}) {\n${branch}}`;
         ++n;
     } while (block.getInput('IF' + n));
     if (block.getInput('ELSE')) {
-        branchCode = Blockly.C.statementToCode(block, 'ELSE');
-        code += ` else {\n${branchCode}}`;
+        code += ` else {\n${Blockly.C.statementToCode(block, 'ELSE')}}`;
     }
     return code + '\n';
 };
 
-// 비교 연산
+// ── 비교 / 논리 ───────────────────────────────────────────────────────────
 Blockly.C.forBlock['logic_compare'] = function(block) {
-    const OPERATORS = { 'EQ': '==', 'NEQ': '!=', 'LT': '<', 'LTE': '<=', 'GT': '>', 'GTE': '>=' };
-    const operator = OPERATORS[block.getFieldValue('OP')];
-    const argument0 = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC) || '0';
-    const argument1 = Blockly.C.valueToCode(block, 'B', Blockly.C.ORDER_ATOMIC) || '0';
-    return [`${argument0} ${operator} ${argument1}`, Blockly.C.ORDER_ATOMIC];
+    const OPS = { EQ:'==', NEQ:'!=', LT:'<', LTE:'<=', GT:'>', GTE:'>=' };
+    const op = OPS[block.getFieldValue('OP')];
+    const a  = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_RELATIONAL) || '0';
+    const b  = Blockly.C.valueToCode(block, 'B', Blockly.C.ORDER_RELATIONAL) || '0';
+    return [`${a} ${op} ${b}`, Blockly.C.ORDER_RELATIONAL];
 };
 
-// 논리 연산
 Blockly.C.forBlock['logic_operation'] = function(block) {
-    const operator = (block.getFieldValue('OP') === 'AND') ? '&&' : '||';
-    const argument0 = Blockly.C.valueToCode(block, 'A', Blockly.C.ORDER_ATOMIC) || 'false';
-    const argument1 = Blockly.C.valueToCode(block, 'B', Blockly.C.ORDER_ATOMIC) || 'false';
-    return [`${argument0} ${operator} ${argument1}`, Blockly.C.ORDER_ATOMIC];
+    const and   = block.getFieldValue('OP') === 'AND';
+    const op    = and ? '&&' : '||';
+    const order = and ? Blockly.C.ORDER_LOGICAL_AND : Blockly.C.ORDER_LOGICAL_OR;
+    const a     = Blockly.C.valueToCode(block, 'A', order) || 'false';
+    const b     = Blockly.C.valueToCode(block, 'B', order) || 'false';
+    return [`${a} ${op} ${b}`, order];
 };
 
-// 시작 블록 (C)
-Blockly.C.forBlock['sf_start'] = function(block) {
-    return '\n';
+Blockly.C.forBlock['logic_boolean'] = function(block) {
+    return [block.getFieldValue('BOOL') === 'TRUE' ? 'true' : 'false', Blockly.C.ORDER_ATOMIC];
 };
 
-// 커스텀 블록 (C)
-Blockly.C.forBlock['sf_get_temp'] = function(block) { return ['getTemperature()', Blockly.C.ORDER_ATOMIC]; };
-Blockly.C.forBlock['sf_get_humid'] = function(block) { return ['getHumidity()', Blockly.C.ORDER_ATOMIC]; };
-Blockly.C.forBlock['sf_get_light'] = function(block) { return ['analogRead(A0)', Blockly.C.ORDER_ATOMIC]; };
-Blockly.C.forBlock['sf_get_soil'] = function(block) { return ['analogRead(A1)', Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['logic_negate'] = function(block) {
+    const arg = Blockly.C.valueToCode(block, 'BOOL', Blockly.C.ORDER_UNARY_PREFIX) || 'false';
+    return [`!${arg}`, Blockly.C.ORDER_UNARY_PREFIX];
+};
+
+// ── 반복문 ────────────────────────────────────────────────────────────────
+Blockly.C.forBlock['controls_whileUntil'] = function(block) {
+    const until  = block.getFieldValue('MODE') === 'UNTIL';
+    let   cond   = Blockly.C.valueToCode(block, 'BOOL', Blockly.C.ORDER_NONE) || 'false';
+    const branch = Blockly.C.statementToCode(block, 'DO');
+    if (until) cond = `!(${cond})`;
+    return `while (${cond}) {\n${branch}}\n`;
+};
+
+Blockly.C.forBlock['controls_repeat_ext'] = function(block) {
+    const times  = Blockly.C.valueToCode(block, 'TIMES', Blockly.C.ORDER_NONE) || '0';
+    const v      = Blockly.C._getLoopVar();
+    const branch = Blockly.C.statementToCode(block, 'DO');
+    return `for (int ${v} = 0; ${v} < (int)(${times}); ${v}++) {\n${branch}}\n`;
+};
+
+// ── 시작 / 스마트팜 전용 블록 ─────────────────────────────────────────────
+Blockly.C.forBlock['sf_start']     = function(block) { return '\n'; };
+Blockly.C.forBlock['sf_get_temp']  = function(block) { return ['getTemperature()',  Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['sf_get_humid'] = function(block) { return ['getHumidity()',     Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['sf_get_light'] = function(block) { return ['analogRead(A0)',    Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['sf_get_soil']  = function(block) { return ['analogRead(A1)',    Blockly.C.ORDER_ATOMIC]; };
 
 Blockly.C.forBlock['sf_pump_on'] = function(block) {
     const speed = Blockly.C.valueToCode(block, 'SPEED', Blockly.C.ORDER_ATOMIC) || '0';
@@ -330,7 +542,6 @@ Blockly.C.forBlock['sf_pump_on'] = function(block) {
 Blockly.C.forBlock['sf_pump_off'] = function(block) {
     return `  digitalWrite(7, LOW);\n  analogWrite(5, 0);\n`;
 };
-
 Blockly.C.forBlock['sf_rgb_set'] = function(block) {
     const r = Blockly.C.valueToCode(block, 'R', Blockly.C.ORDER_ATOMIC) || '0';
     const g = Blockly.C.valueToCode(block, 'G', Blockly.C.ORDER_ATOMIC) || '0';
@@ -340,21 +551,17 @@ Blockly.C.forBlock['sf_rgb_set'] = function(block) {
 Blockly.C.forBlock['sf_rgb_off'] = function(block) {
     return `  analogWrite(9, 0);\n  analogWrite(10, 0);\n  analogWrite(11, 0);\n`;
 };
-
 Blockly.C.forBlock['sf_buzzer_on'] = function(block) {
     const freq = Blockly.C.valueToCode(block, 'FREQ', Blockly.C.ORDER_ATOMIC) || '1000';
-    return `  tone(6, ${freq});\n`;
+    return `  tone(8, ${freq});\n`;
 };
-Blockly.C.forBlock['sf_buzzer_off'] = function(block) {
-    return `  noTone(6);\n`;
-};
-
+Blockly.C.forBlock['sf_buzzer_off'] = function(block) { return `  noTone(8);\n`; };
 Blockly.C.forBlock['sf_delay'] = function(block) {
     const sec = Blockly.C.valueToCode(block, 'SEC', Blockly.C.ORDER_ATOMIC) || '1';
-    return `  delay((${sec}) * 1000);\n`;
+    return `  delay((int)((${sec})*1000));\n`;
 };
-
 Blockly.C.forBlock['sf_forever'] = function(block) {
     const branch = Blockly.C.statementToCode(block, 'DO');
-    return `  while (true) {\n${branch}  }\n`;
+    return `while (true) {\n${branch}}\n`;
 };
+

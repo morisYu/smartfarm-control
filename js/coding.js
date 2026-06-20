@@ -226,13 +226,40 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // --- "이미지로 다운로드" 우클릭 메뉴 추가 ---
+    const downloadImageItem = {
+        displayText: '이미지로 다운로드 (PNG)',
+        preconditionFn: function(scope) {
+            return 'enabled'; // 항상 활성화
+        },
+        callback: function(scope) {
+            downloadBlockAsImage(scope.block);
+        },
+        scopeType: Blockly.ContextMenuRegistry.ScopeType.BLOCK,
+        id: 'downloadBlockImage',
+        weight: 100, // 메뉴의 맨 아래쪽에 배치
+    };
+    // 기존에 등록된 것이 있다면 해제 후 재등록
+    if (Blockly.ContextMenuRegistry.registry.getItem('downloadBlockImage')) {
+        Blockly.ContextMenuRegistry.registry.unregister('downloadBlockImage');
+    }
+    Blockly.ContextMenuRegistry.registry.register(downloadImageItem);
+
     // Blockly 주입 (Injection) - 렌더러는 기본으로 두어 크기를 줄이고, 테마는 Zelos로 설정해 밝은 색상 유지
     workspace = Blockly.inject('blocklyDiv', {
         toolbox: toolbox,
         theme: Blockly.Themes ? Blockly.Themes.Zelos : undefined,
         grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
         trashcan: true,
-        scrollbars: true
+        scrollbars: true,
+        zoom: {
+            controls: true,
+            wheel: true,
+            startScale: 1.0,
+            maxScale: 3,
+            minScale: 0.3,
+            scaleSpeed: 1.2
+        }
     });
 
     // --- 자동 저장 & 복구 시스템 ---
@@ -511,4 +538,110 @@ function stopCode() {
     window.dispatchEvent(new CustomEvent('blockly-run-state-changed', { detail: false }));
     document.getElementById('btn-run-code').classList.remove('hidden');
     document.getElementById('btn-stop-code').classList.add('hidden');
+}
+
+// --- 블록을 이미지(PNG)로 다운로드하는 함수 ---
+function downloadBlockAsImage(block) {
+    const svgRoot = block.getSvgRoot();
+    const bBox = svgRoot.getBBox();
+    const padding = 15; // 상하좌우 여백
+    const width = bBox.width + padding * 2;
+    const height = bBox.height + padding * 2;
+
+    const clone = svgRoot.cloneNode(true);
+    // 화면에 배치된 절대 위치 transform 제거
+    clone.removeAttribute('transform');
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+    svg.setAttribute('viewBox', `${bBox.x - padding} ${bBox.y - padding} ${width} ${height}`);
+    
+    // 브라우저에서 화면에 렌더링된 실제 폰트 크기/종류/굵기를 가져와 다운로드 이미지에 똑같이 적용 (글자 겹침 방지)
+    let fontSize = '11pt';
+    let fontFamily = '"Helvetica Neue", Helvetica, sans-serif';
+    let fontWeight = 'normal';
+    if (workspace && workspace.getParentSvg()) {
+        const sampleText = workspace.getParentSvg().querySelector('text.blocklyText') || workspace.getParentSvg().querySelector('text');
+        if (sampleText) {
+            const computed = window.getComputedStyle(sampleText);
+            if (computed.fontSize) fontSize = computed.fontSize;
+            if (computed.fontFamily) fontFamily = computed.fontFamily;
+            if (computed.fontWeight) fontWeight = computed.fontWeight;
+        }
+    }
+
+    // Blockly의 기본 폰트 및 아이콘 등에 대한 최소한의 대비책 스타일
+    const fallbackStyle = document.createElement('style');
+    fallbackStyle.textContent = `
+        text, .blocklyText { 
+            font-family: ${fontFamily} !important; 
+            font-size: ${fontSize} !important; 
+            font-weight: ${fontWeight} !important; 
+        }
+        .blocklyText { fill: #fff; }
+        .blocklyNonEditableText>rect, .blocklyEditableText>rect, .blocklyFieldRect, .blocklyDropdownRect {
+            fill: #fff !important;
+            fill-opacity: 0.6;
+            stroke: none;
+        }
+        .blocklyNonEditableText>text, .blocklyEditableText>text, .blocklyFieldText {
+            fill: #000 !important;
+        }
+        .blocklyIconGroup { fill: #00f; stroke: #fff; }
+        .blocklyIconShield { fill: #00c; stroke: #ccc; stroke-width: 1px; }
+        .blocklyIconMark { fill: #fff; font-family: sans-serif; font-size: 9pt; font-weight: bold; }
+        .blocklyMutatorBackground { fill: #fff; stroke: #ddd; stroke-width: 1; }
+    `;
+    svg.appendChild(fallbackStyle);
+
+    // [핵심] 현재 문서(head 포함)에 주입된 모든 Blockly 관련 스타일 태그(테마, 공통 스타일)를 복사하여 SVG 내부에 삽입
+    // 이렇게 해야 숫자 블록의 입력창이나 설정 버튼 등 테마 전용 스타일이 이미지에 그대로 유지됩니다.
+    const allStyles = document.querySelectorAll('style');
+    allStyles.forEach(s => {
+        if ((s.id && s.id.toLowerCase().includes('blockly')) || (s.textContent && s.textContent.includes('.blockly'))) {
+            svg.appendChild(s.cloneNode(true));
+        }
+    });
+
+    svg.appendChild(clone);
+
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svg);
+    
+    const img = new Image();
+    const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+    
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        // 고해상도(레티나) 지원을 위해 2배 크기로 캔버스 생성
+        const scale = 2;
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+        
+        // 배경은 투명하게 두고 이미지만 그리기
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const pngUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = `block_${block.type}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
+    };
+    
+    img.onerror = function(err) {
+        console.error("이미지 변환 실패:", err);
+        alert("이미지로 변환하는 중 오류가 발생했습니다.");
+    };
+    
+    img.src = url;
 }
