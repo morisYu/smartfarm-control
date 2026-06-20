@@ -38,7 +38,9 @@ input[type="color"]::-webkit-color-swatch {
 /* Blockly 스크롤바가 필요 없을 때(비활성 상태) 완전히 숨김 처리 */
 .blocklyScrollbarHorizontal.blocklyDisabled,
 .blocklyScrollbarVertical.blocklyDisabled {
-    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 /* Blockly 13 툴박스 - 엔트리 스타일 */

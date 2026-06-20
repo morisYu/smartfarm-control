@@ -537,6 +537,13 @@ document.addEventListener('DOMContentLoaded', () => {
             rgbType: pinInputs.rgbType.value
         };
 
+        // 빈 값이 있는지 확인
+        const hasEmpty = Object.values(config).some(val => val === '');
+        if (hasEmpty) {
+            alert('모든 핀 번호를 입력해주세요.');
+            return;
+        }
+
         // 로컬 스토리지에 저장 (새로고침 시 유지)
         localStorage.setItem('smartfarm_pins', JSON.stringify(config));
 

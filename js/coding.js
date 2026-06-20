@@ -251,7 +251,11 @@ document.addEventListener('DOMContentLoaded', () => {
         theme: Blockly.Themes ? Blockly.Themes.Zelos : undefined,
         grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
         trashcan: true,
-        scrollbars: true,
+        move: {
+            scrollbars: true,
+            drag: true,
+            wheel: true
+        },
         zoom: {
             controls: true,
             wheel: true,
