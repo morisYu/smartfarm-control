@@ -291,27 +291,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // 연결 버튼
     btnConnect.addEventListener('click', async () => {
         if (!isConnected) {
-            const success = await serial.connect();
-            if (success) {
-                updateConnectionUI(true);
-                
-                // 연결 성공 시, 로컬 스토리지에 저장된 핀 설정이 있다면 아두이노로 자동 전송하여 동기화
-                // 주의: 아두이노는 시리얼 연결 시 자동 리셋(Auto-Reset) 되므로 부팅 대기 시간이 필요합니다.
-                const savedPins = localStorage.getItem('smartfarm_pins');
-                if (savedPins) {
-                    try {
-                        const config = JSON.parse(savedPins);
-                        // 부트로더 로딩을 기다리기 위해 2.5초 대기 후 전송
-                        setTimeout(() => {
-                            if (isConnected) {
-                                hw.sendPinConfig(config);
-                                console.log("자동 핀 동기화 완료:", config);
-                            }
-                        }, 2500);
-                    } catch(e) {
-                        console.error('핀 설정 로드 오류:', e);
+            try {
+                const success = await serial.connect();
+                if (success) {
+                    updateConnectionUI(true);
+                    
+                    // 연결 성공 시, 로컬 스토리지에 저장된 핀 설정이 있다면 아두이노로 자동 전송하여 동기화
+                    // 주의: 아두이노는 시리얼 연결 시 자동 리셋(Auto-Reset) 되므로 부팅 대기 시간이 필요합니다.
+                    const savedPins = localStorage.getItem('smartfarm_pins');
+                    if (savedPins) {
+                        try {
+                            const config = JSON.parse(savedPins);
+                            // 부트로더 로딩을 기다리기 위해 2.5초 대기 후 전송
+                            setTimeout(() => {
+                                if (isConnected) {
+                                    hw.sendPinConfig(config);
+                                    console.log("자동 핀 동기화 완료:", config);
+                                }
+                            }, 2500);
+                        } catch(e) {
+                            console.error('핀 설정 로드 오류:', e);
+                        }
                     }
                 }
+            } catch (error) {
+                console.error("연결 에러 발생:", error);
+                serial.log('연결 실패: ' + (error.message || '알 수 없는 에러'));
             }
         } else {
             await serial.disconnect();

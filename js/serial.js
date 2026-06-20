@@ -35,14 +35,34 @@ window.SmartFarmSerial = {
             } else {
                 // 사용자에게 포트 선택 창 표시 (안드로이드 크롬 호환성을 위한 필터 추가)
                 const filters = [
-                    { usbVendorId: 0x2341 }, // 정품 아두이노 Uno/Nano
-                    { usbVendorId: 0x1a86 }, // 중국산 호환 보드 CH340
+                    { usbVendorId: 0x2341, usbProductId: 0x0043 }, // 정품 아두이노 Uno
+                    { usbVendorId: 0x2341, usbProductId: 0x0042 }, // 정품 아두이노 Mega
+                    { usbVendorId: 0x1a86, usbProductId: 0x7523 }, // 중국산 호환 보드 CH340
                     { usbVendorId: 0x10c4 }  // CP2102 호환 칩셋
                 ];
                 this.port = await navigator.serial.requestPort({ filters });
             }
-            // 기본 아두이노 보드레이트 9600 사용
-            await this.port.open({ baudRate: 9600 });
+
+            // 안드로이드 커널이 USB 인터페이스 권한을 쥐고 놔주지 않는 현상을 방지하기 위한 세션 초기화(reset)
+            if (this.port) {
+                const usbDev = this.port.usbDevice_ || this.port._device || this.port.device_;
+                if (usbDev && typeof usbDev.reset === 'function') {
+                    try {
+                        await usbDev.reset();
+                        console.log("[Serial] USB Device reset successful.");
+                    } catch (resetErr) {
+                        console.warn("[Serial] USB Device reset failed (may not be supported or necessary):", resetErr);
+                    }
+                }
+            }
+
+            try {
+                await this.port.open({ baudRate: 115200 });
+            } catch (openError) {
+                console.error("[Serial] 포트 개방 오류 (Open Error):", openError);
+                throw openError; // UI에 에러를 표시하기 위해 호출자(app.js)로 에러 전달
+            }
+
             this.keepReading = true;
             
             this.log('시리얼 포트 연결 성공!');
@@ -61,7 +81,7 @@ window.SmartFarmSerial = {
 
         } catch (error) {
             this.log('연결 실패: ' + error.message);
-            return false;
+            throw error; // app.js에서 캐치하여 화면에 띄울 수 있도록 에러 재발생
         }
     },
 
