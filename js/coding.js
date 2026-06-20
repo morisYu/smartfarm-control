@@ -395,11 +395,11 @@ function updateCodePreview(event) {
             Blockly.C.init(workspace);
             let innerCode = Blockly.C.blockToCode(startBlocks[0]) || '';
             
-            cCode = `void setup() {\n  Serial.begin(9600);\n}\n\nvoid loop() {\n${innerCode.trim() ? innerCode.split('\\n').map(line => '  ' + line).join('\\n') : '  // 코드를 조립하세요'}\n}\n`;
+            cCode = `void setup() {\n  Serial.begin(115200);\n}\n\nvoid loop() {\n${innerCode.trim() ? innerCode.split('\\n').map(line => '  ' + line).join('\\n') : '  // 코드를 조립하세요'}\n}\n`;
         } else {
             // 없으면 경고 메시지 출력
             jsCode = "// '▶ 시작하기' 블록을 먼저 추가해주세요.\\n";
-            cCode = `void setup() {\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  // '▶ 시작하기' 블록을 먼저 추가해주세요.\n}\n`;
+            cCode = `void setup() {\n  Serial.begin(115200);\n}\n\nvoid loop() {\n  // '▶ 시작하기' 블록을 먼저 추가해주세요.\n}\n`;
         }
 
         const jsPreview = document.getElementById('code-preview-js');

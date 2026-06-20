@@ -19,7 +19,7 @@ float cachedH = 0.0;
 float cachedT = 0.0;
 
 void setup() {
-  Serial.begin(9600); // 웹 브라우저와의 통신 속도
+  Serial.begin(115200); // 웹 브라우저와의 통신 속도
   dht = new DHT(pinDht, DHTTYPE);
   dht->begin();
   updatePinModes();
