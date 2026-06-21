@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "avrbro": "^0.0.8",
+    "blockly": "^13.0.0",
     "stk500-esm": "^1.4.3",
     "webserial-flasher": "^1.0.1"
   }

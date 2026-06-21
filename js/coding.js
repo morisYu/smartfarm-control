@@ -649,3 +649,34 @@ function downloadBlockAsImage(block) {
     
     img.src = url;
 }
+
+// --- 블록 일부만 쓰레기통에 닿아도 삭제되도록 패치 ---
+if (typeof Blockly !== 'undefined' && Blockly.Trashcan) {
+    const origGetClientRect = Blockly.Trashcan.prototype.getClientRect;
+    Blockly.Trashcan.prototype.getClientRect = function() {
+        let rect = origGetClientRect.call(this);
+        if (!rect) return null;
+
+        // 드래그 대상(블록)의 크기만큼 쓰레기통의 히트 영역을 좌측/상단으로 확장합니다.
+        // Blockly는 드래그 타겟을 확인할 때 항상 블록의 좌측 상단 좌표를 기준으로 검사하므로,
+        // 쓰레기통 영역을 블록의 크기만큼 미리 늘려두면 블록의 어떤 부분이든 쓰레기통에 닿았을 때 교차(Intersection)로 인식됩니다.
+        const selected = Blockly.common ? Blockly.common.getSelected() : Blockly.selected;
+        if (selected && typeof selected.getHeightWidth === 'function') {
+            const size = selected.getHeightWidth();
+            const scale = this.workspace_ ? this.workspace_.scale : 1;
+            
+            const blockWidthPx = size.width * scale;
+            const blockHeightPx = size.height * scale;
+            
+            const margin = 20; // 살짝만 닿아도 삭제되도록 마진 추가
+            
+            rect.top -= (blockHeightPx + margin);
+            rect.left -= (blockWidthPx + margin);
+            rect.bottom += margin;
+            rect.right += margin;
+        }
+        
+        return rect;
+    };
+}
+
