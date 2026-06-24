@@ -2,21 +2,27 @@
  * app.js
  * 메인 애플리케이션 로직 (UI 이벤트 바인딩 및 데이터 파싱)
  */
-import avrbro from 'https://esm.sh/avrbro';
-import { serial as polyfillSerial } from 'https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js';
+// avrbro는 펌웨어 업로드 시에만 필요하므로 지연 로드
+// (static import 시 CDN 접속 실패하면 전체 모듈이 로드되지 않는 문제 방지)
+let avrbro = null;
 
-// --- Web Serial Polyfill 초기화 및 Override ---
+// --- Web Serial Polyfill 초기화 (안드로이드/비호환 브라우저 지원) ---
 const isAndroid = /Android/i.test(navigator.userAgent);
 if (!navigator.serial || isAndroid) {
     if (navigator.usb) {
-        Object.defineProperty(navigator, 'serial', {
-            value: polyfillSerial,
-            writable: true,
-            configurable: true
-        });
-        console.log("Web Serial Polyfill (WebUSB) successfully overridden for Android/Compatibility.");
+        try {
+            const { serial: polyfillSerial } = await import('https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js');
+            Object.defineProperty(navigator, 'serial', {
+                value: polyfillSerial,
+                writable: true,
+                configurable: true
+            });
+            console.log("[App] Web Serial Polyfill (WebUSB) 적용 완료.");
+        } catch (e) {
+            console.error("[App] Web Serial Polyfill 로드 실패:", e);
+        }
     } else {
-        console.warn("이 브라우저는 WebUSB를 지원하지 않아 Polyfill을 적용할 수 없습니다.");
+        console.warn("[App] WebUSB 미지원. 안드로이드에서 시리얼을 사용하려면 HTTPS 또는 localhost로 접속하세요.");
     }
 }
 
@@ -573,6 +579,17 @@ document.addEventListener('DOMContentLoaded', () => {
         flashStatusText.textContent = '펌웨어 파일(.hex) 다운로드 중...';
 
         try {
+            // avrbro 라이브러리 지연 로드 (필요 시에만)
+            if (!avrbro) {
+                flashStatusText.textContent = 'avrbro 라이브러리 로딩 중...';
+                try {
+                    const module = await import('https://esm.sh/avrbro');
+                    avrbro = module.default;
+                } catch (loadErr) {
+                    throw new Error('펌웨어 업로드 라이브러리(avrbro)를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.');
+                }
+            }
+
             // 2. 서버(GitHub Pages)에서 펌웨어 바이너리 파일 다운로드
             const response = await fetch('firmware/smartfarm/smartfarm.ino.hex');
             if (!response.ok) {

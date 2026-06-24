@@ -24,8 +24,18 @@ window.SmartFarmSerial = {
      * 시리얼 포트 연결 요청
      */
     connect: async function(existingPort = null) {
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        
         if (!('serial' in navigator)) {
-            alert('Web Serial API를 지원하지 않는 브라우저입니다.\nChrome, Edge 등 Chromium 기반 브라우저를 사용해주세요.');
+            if (isAndroid) {
+                alert('안드로이드 시리얼 연결 오류:\n\n' +
+                    '1. Chrome 브라우저(89 이상)를 사용하세요.\n' +
+                    '2. 반드시 HTTPS 또는 localhost로 접속하세요.\n' +
+                    '   (file:// 에서는 WebUSB가 차단됩니다)\n' +
+                    '3. USB OTG 케이블로 아두이노를 연결하세요.');
+            } else {
+                alert('Web Serial API를 지원하지 않는 브라우저입니다.\nChrome, Edge 등 Chromium 기반 브라우저를 사용해주세요.');
+            }
             return false;
         }
 
@@ -33,14 +43,29 @@ window.SmartFarmSerial = {
             if (existingPort) {
                 this.port = existingPort;
             } else {
-                // 사용자에게 포트 선택 창 표시 (안드로이드 크롬 호환성을 위한 필터 추가)
+                // 사용자에게 포트 선택 창 표시 (안드로이드 WebUSB 폴리필 호환 필터)
                 const filters = [
                     { usbVendorId: 0x2341, usbProductId: 0x0043 }, // 정품 아두이노 Uno
                     { usbVendorId: 0x2341, usbProductId: 0x0042 }, // 정품 아두이노 Mega
-                    { usbVendorId: 0x1a86, usbProductId: 0x7523 }, // 중국산 호환 보드 CH340
-                    { usbVendorId: 0x10c4 }  // CP2102 호환 칩셋
+                    { usbVendorId: 0x1a86, usbProductId: 0x7523 }, // CH340 호환 보드
+                    { usbVendorId: 0x10c4, usbProductId: 0xea60 }, // CP2102 호환 칩셋
+                    { usbVendorId: 0x0403, usbProductId: 0x6001 }, // FTDI FT232
+                    { usbVendorId: 0x2341 },                       // 기타 아두이노 보드
+                    { usbVendorId: 0x1a86 },                       // 기타 CH340 변형
                 ];
-                this.port = await navigator.serial.requestPort({ filters });
+                
+                try {
+                    this.port = await navigator.serial.requestPort({ filters });
+                } catch (filterError) {
+                    // 사용자 취소는 그대로 전달
+                    if (filterError.name === 'NotFoundError' || 
+                        (filterError.message && filterError.message.toLowerCase().includes('cancel'))) {
+                        throw filterError;
+                    }
+                    // 필터 호환성 문제 시 필터 없이 재시도 (안드로이드 폴리필 호환)
+                    this.log('필터 기반 장치 검색 실패, 전체 장치 목록으로 재시도...');
+                    this.port = await navigator.serial.requestPort();
+                }
             }
 
             // 안드로이드 커널이 USB 인터페이스 권한을 쥐고 놔주지 않는 현상을 방지하기 위한 세션 초기화(reset)
@@ -59,21 +84,41 @@ window.SmartFarmSerial = {
             try {
                 await this.port.open({ baudRate: 115200 });
             } catch (openError) {
-                console.error("[Serial] 포트 개방 오류 (Open Error):", openError);
-                throw openError; // UI에 에러를 표시하기 위해 호출자(app.js)로 에러 전달
+                // 포트가 이미 열려있는 경우 처리 (안드로이드에서 간헐적 발생)
+                if (openError.message && 
+                    (openError.message.includes('already open') || 
+                     openError.message.includes('already been opened'))) {
+                    this.log('포트가 이미 열려있습니다. 기존 연결을 사용합니다.');
+                } else {
+                    console.error("[Serial] 포트 개방 오류 (Open Error):", openError);
+                    throw openError; // UI에 에러를 표시하기 위해 호출자(app.js)로 에러 전달
+                }
             }
 
             this.keepReading = true;
             
-            this.log('시리얼 포트 연결 성공!');
+            this.log('시리얼 포트 연결 성공!' + (isAndroid ? ' (WebUSB 폴리필)' : ''));
             
-            // 물리적 연결 끊김 감지 (USB 선 뽑힘 등)
-            navigator.serial.addEventListener('disconnect', (event) => {
-                if (event.target === this.port) {
-                    this.log('장치가 물리적으로 분리되었습니다.');
-                    this.handleDisconnect();
+            // 물리적 연결 끊김 감지 - Web Serial Polyfill 호환성을 위해 별도 try-catch
+            try {
+                if (typeof navigator.serial.addEventListener === 'function') {
+                    navigator.serial.addEventListener('disconnect', (event) => {
+                        if (event.target === this.port) {
+                            this.log('장치가 물리적으로 분리되었습니다.');
+                            this.handleDisconnect();
+                        }
+                    });
+                } else if (this.port && typeof this.port.addEventListener === 'function') {
+                    // 일부 폴리필은 포트 객체에서 disconnect 이벤트를 발생
+                    this.port.addEventListener('disconnect', () => {
+                        this.log('장치가 물리적으로 분리되었습니다.');
+                        this.handleDisconnect();
+                    });
                 }
-            });
+            } catch (disconnectErr) {
+                // disconnect 이벤트 등록 실패해도 연결 자체는 정상 진행
+                console.warn('[Serial] disconnect 이벤트 리스너 등록 실패 (폴리필 호환성):', disconnectErr.message);
+            }
 
             // 비동기로 수신 루프 시작
             this.readLoop();
