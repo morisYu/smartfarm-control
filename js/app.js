@@ -11,7 +11,10 @@ const isAndroid = /Android/i.test(navigator.userAgent);
 if (!navigator.serial || isAndroid) {
     if (navigator.usb) {
         try {
-            const { serial: polyfillSerial } = await import('https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js');
+            const { serial: polyfillSerial } = await Promise.race([
+                import('https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js'),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Polyfill 로드 타임아웃 (5초)')), 5000))
+            ]);
             Object.defineProperty(navigator, 'serial', {
                 value: polyfillSerial,
                 writable: true,
