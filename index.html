@@ -70,19 +70,19 @@
             
             <!-- 센서 카드 4개 -->
             <div class="grid grid-cols-4 gap-4 flex-shrink-0">
-                <div class="sensor-card active cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-blue-400 dark:border-blue-500 shadow-md transition transform hover:-translate-y-1" data-sensor="temp">
+                <div class="sensor-card active cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-blue-400 dark:border-blue-500 shadow-md transition transform hover:-translate-y-1 hover:border-blue-200 dark:hover:border-blue-800" data-sensor="temp" data-active-border="border-blue-400" data-active-dark-border="dark:border-blue-500">
                     <span class="text-gray-500 dark:text-gray-400 text-sm font-bold mb-1">온도 (Temp)</span>
                     <div class="text-3xl font-extrabold text-blue-600 dark:text-blue-400"><span id="val-temp">--</span><span class="text-lg">°C</span></div>
                 </div>
-                <div class="sensor-card cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-transparent hover:border-cyan-200 dark:hover:border-cyan-800 shadow-sm transition transform hover:-translate-y-1" data-sensor="humid">
+                <div class="sensor-card cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-transparent shadow-sm transition transform hover:-translate-y-1 hover:border-cyan-200 dark:hover:border-cyan-800" data-sensor="humid" data-active-border="border-cyan-400" data-active-dark-border="dark:border-cyan-500">
                     <span class="text-gray-500 dark:text-gray-400 text-sm font-bold mb-1">습도 (Humid)</span>
                     <div class="text-3xl font-extrabold text-cyan-600 dark:text-cyan-400"><span id="val-humid">--</span><span class="text-lg">%</span></div>
                 </div>
-                <div class="sensor-card cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-transparent hover:border-yellow-200 dark:hover:border-yellow-800 shadow-sm transition transform hover:-translate-y-1" data-sensor="light">
+                <div class="sensor-card cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-transparent shadow-sm transition transform hover:-translate-y-1 hover:border-yellow-200 dark:hover:border-yellow-800" data-sensor="light" data-active-border="border-yellow-400" data-active-dark-border="dark:border-yellow-500">
                     <span class="text-gray-500 dark:text-gray-400 text-sm font-bold mb-1">조도 (Light)</span>
                     <div class="text-3xl font-extrabold text-yellow-500 dark:text-yellow-400"><span id="val-light">--</span></div>
                 </div>
-                <div class="sensor-card cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-transparent hover:border-emerald-200 dark:hover:border-emerald-800 shadow-sm transition transform hover:-translate-y-1" data-sensor="soil">
+                <div class="sensor-card cursor-pointer bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-transparent shadow-sm transition transform hover:-translate-y-1 hover:border-emerald-200 dark:hover:border-emerald-800" data-sensor="soil" data-active-border="border-emerald-400" data-active-dark-border="dark:border-emerald-500">
                     <span class="text-gray-500 dark:text-gray-400 text-sm font-bold mb-1">토양 수분 (Soil)</span>
                     <div class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400"><span id="val-soil">--</span></div>
                 </div>

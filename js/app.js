@@ -177,11 +177,11 @@ document.addEventListener('DOMContentLoaded', () => {
     sensorCards.forEach(card => {
         card.addEventListener('click', () => {
             sensorCards.forEach(c => {
-                c.classList.remove('active', 'border-blue-400', 'dark:border-blue-500');
-                c.classList.add('border-transparent');
+                c.classList.remove('active', 'shadow-md', c.dataset.activeBorder, c.dataset.activeDarkBorder);
+                c.classList.add('border-transparent', 'shadow-sm');
             });
-            card.classList.add('active', 'border-blue-400', 'dark:border-blue-500');
-            card.classList.remove('border-transparent');
+            card.classList.add('active', 'shadow-md', card.dataset.activeBorder, card.dataset.activeDarkBorder);
+            card.classList.remove('border-transparent', 'shadow-sm');
             
             activeSensor = card.dataset.sensor;
             const sData = sensorData[activeSensor];
