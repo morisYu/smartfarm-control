@@ -16,6 +16,39 @@ const isAndroid = /Android/i.test(navigator.userAgent);
                     import('https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js'),
                     new Promise((_, reject) => setTimeout(() => reject(new Error('Polyfill 로드 타임아웃 (5초)')), 5000))
                 ]);
+                
+                // 안드로이드 WebUSB의 claimInterface 오류 방지를 위해 requestPort/getPorts가 반환하는 port.open()을 가로채서 reset() 주입
+                const patchPort = (port) => {
+                    if (port && !port._isPatchedForAndroid) {
+                        const originalOpen = port.open.bind(port);
+                        port.open = async function(openOptions) {
+                            const usbDev = port.usbDevice_ || port._device || port.device_;
+                            if (usbDev && typeof usbDev.reset === 'function') {
+                                try {
+                                    await usbDev.reset();
+                                    console.log("[App] Polyfill Port: Auto USB Device reset successful before open.");
+                                } catch(e) {
+                                    console.warn("[App] Polyfill Port: Auto reset failed:", e);
+                                }
+                            }
+                            return await originalOpen(openOptions);
+                        };
+                        port._isPatchedForAndroid = true;
+                    }
+                    return port;
+                };
+
+                const originalRequestPort = polyfillSerial.requestPort.bind(polyfillSerial);
+                polyfillSerial.requestPort = async function(options) {
+                    return patchPort(await originalRequestPort(options));
+                };
+
+                const originalGetPorts = polyfillSerial.getPorts.bind(polyfillSerial);
+                polyfillSerial.getPorts = async function() {
+                    const ports = await originalGetPorts();
+                    return ports.map(patchPort);
+                };
+
                 Object.defineProperty(navigator, 'serial', {
                     value: polyfillSerial,
                     writable: true,
