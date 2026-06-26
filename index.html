@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>스마트팜 제어 대시보드</title>
     <!-- Tailwind CSS (CDN for zero-build setup) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,6 +32,16 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* 태블릿/모바일 가로 모드 하단 안전 영역 (홈바/내비게이션바 겹침 방지) */
+        .pb-safe {
+            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+        }
+        @media (orientation: landscape) {
+            .pb-safe {
+                padding-bottom: max(3rem, env(safe-area-inset-bottom));
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-slate-900 dark:text-gray-200 h-screen overflow-hidden flex flex-col font-sans transition-colors duration-300">
@@ -64,7 +74,7 @@
     </header>
 
     <!-- Main Content -->
-    <main id="view-dashboard" class="flex-grow flex gap-4 p-4 min-h-0 transition-opacity duration-300">
+    <main id="view-dashboard" class="flex-grow flex gap-4 p-4 pb-safe min-h-0 transition-opacity duration-300">
         <!-- 좌측: 센서 대시보드 & 그래프 -->
         <section class="w-1/2 flex flex-col gap-4">
             
@@ -215,7 +225,7 @@
     </main>
 
     <!-- Coding View -->
-    <main id="view-coding" class="flex-grow gap-4 p-4 min-h-0 hidden transition-opacity duration-300 flex">
+    <main id="view-coding" class="flex-grow gap-4 p-4 pb-safe min-h-0 hidden transition-opacity duration-300 flex">
         <!-- 좌측: Blockly Workspace -->
         <section class="w-5/6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col overflow-hidden relative transition-colors">
             <div class="bg-gray-100 dark:bg-slate-700 px-4 py-3 border-b border-gray-200 dark:border-slate-600 flex justify-between items-center transition-colors">
