@@ -326,6 +326,13 @@
     </div>
 
     <!-- JavaScript Modules -->
+    <script src="https://cdn.jsdelivr.net/npm/web-serial-polyfill@1.0.15/dist/serial.js"></script>
+    <script>
+        // 안드로이드 등 Web Serial API 미지원 환경에서 WebUSB를 이용한 폴리필 적용
+        if (!navigator.serial && window.serial) {
+            navigator.serial = window.serial;
+        }
+    </script>
     <script src="js/blocks.js?v=4" defer></script>
     <script type="module" src="js/coding.js?v=4"></script>
     <script src="js/serial.js?v=4"></script>
