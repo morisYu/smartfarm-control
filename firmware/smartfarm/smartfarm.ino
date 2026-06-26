@@ -6,7 +6,7 @@ int pinBuzzer = 6;
 int pinRgbR = 9;
 int pinRgbG = 10;
 int pinRgbB = 11;
-int pinLight = A0;
+int pinLight = A0; // DO(디지털 출력) 조도센서 핀 - digitalRead로 읽음
 int pinSoil = A1;
 int pinDht = 2; // DHT 온습도 센서 기본 핀
 
@@ -87,7 +87,9 @@ void loop() {
   if (currentMillis - lastSensorReadTime >= 200) {
     lastSensorReadTime = currentMillis;
     
-    int l = analogRead(pinLight); 
+    // 조도센서: DO(디지털 출력) 타입이므로 digitalRead 사용
+    // DO=LOW(0) → 밝음(0), DO=HIGH(1) → 어두움(1023)
+    int l = digitalRead(pinLight) == HIGH ? 1023 : 0;
     int s = analogRead(pinSoil);
     
     Serial.print("H:"); Serial.print(cachedH);
@@ -105,6 +107,7 @@ void updatePinModes() {
   pinMode(pinRgbR, OUTPUT);
   pinMode(pinRgbG, OUTPUT);
   pinMode(pinRgbB, OUTPUT);
+  pinMode(pinLight, INPUT); // DO 조도센서 - 디지털 입력
   
   digitalWrite(pinPumpDir, LOW);
   analogWrite(pinPumpPwm, 0);
