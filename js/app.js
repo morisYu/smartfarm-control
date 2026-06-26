@@ -93,7 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
         rgbR: document.getElementById('pin-rgb-r'),
         rgbG: document.getElementById('pin-rgb-g'),
         rgbB: document.getElementById('pin-rgb-b'),
-        rgbType: document.getElementById('pin-rgb-type')
+        rgbType: document.getElementById('pin-rgb-type'),
+        pumpType: document.getElementById('pin-pump-type')
     };
 
     // 상태 변수
@@ -316,7 +317,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             setTimeout(() => {
                                 if (isConnected) {
                                     hw.sendPinConfig(config);
-                                    setTimeout(() => { hw.turnOffRgbLed(); }, 100);
+                                    setTimeout(() => { 
+                                        hw.turnOffRgbLed(); 
+                                        hw.turnOffPump(); 
+                                    }, 100);
                                     console.log("자동 핀 동기화 완료:", config);
                                 }
                             }, 2500);
@@ -543,7 +547,8 @@ document.addEventListener('DOMContentLoaded', () => {
             rgbR: pinInputs.rgbR.value.trim(),
             rgbG: pinInputs.rgbG.value.trim(),
             rgbB: pinInputs.rgbB.value.trim(),
-            rgbType: pinInputs.rgbType.value
+            rgbType: pinInputs.rgbType.value,
+            pumpType: pinInputs.pumpType.value
         };
 
         // 빈 값이 있는지 확인

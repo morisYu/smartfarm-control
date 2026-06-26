@@ -8,15 +8,40 @@
 
 window.SmartFarmHW = {
     
+    getPumpType: function() {
+        const saved = localStorage.getItem('smartfarm_pins');
+        if (saved) {
+            try {
+                const config = JSON.parse(saved);
+                return config.pumpType || 'high';
+            } catch(e) {}
+        }
+        return 'high';
+    },
+
     /** ===================================
-     *  워터 펌프 (DC 모터) 제어
+     *  워터 펌프 (DC 모터/릴레이) 제어
      *  =================================== */
     turnOnPump: function(dir, speed) {
+        if (this.getPumpType() === 'low') {
+            // Active-Low 방식의 릴레이 모듈일 경우 (LOW 신호에서 ON)
+            // 보통 방향핀(dir)은 사용하지 않거나 고정되어 있으며, PWM 핀으로 신호를 줍니다.
+            // 255-speed로 반전하면 speed가 클수록 값이 작아져서(LOW에 가까워져서) 더 세게 켜집니다.
+            speed = 255 - speed;
+        }
         window.SmartFarmSerial.sendCommand(`PUMP:${dir},${speed}\n`);
     },
     
     turnOffPump: function() {
-        window.SmartFarmSerial.sendCommand("PUMP:0,0\n");
+        let speed = 0;
+        let dir = 0;
+        if (this.getPumpType() === 'low') {
+            // Active-Low 방식은 HIGH(255) 신호에서 꺼짐
+            // 사용자가 DIR 핀에 릴레이를 연결했을 수도 있으므로, 양쪽 핀 모두 HIGH 신호를 주어 확실히 끕니다.
+            speed = 255;
+            dir = 1;
+        }
+        window.SmartFarmSerial.sendCommand(`PUMP:${dir},${speed}\n`);
     },
 
     /** ===================================
