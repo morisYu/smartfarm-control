@@ -581,6 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. 이미 연결된 시리얼 포트가 있다면 끊기 (부트로더 진입을 위해 포트를 해제해야 함)
         if (isConnected) {
             await serial.disconnect();
+            // 포트 완전 반환 대기 (안드로이드 WebUSB 인터페이스 반환 지연 방지)
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         modalFlash.classList.remove('hidden');

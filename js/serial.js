@@ -150,7 +150,7 @@ window.SmartFarmSerial = {
             } catch(e) {}
         }
         
-        this.handleDisconnect();
+        await this.handleDisconnect();
     },
 
     /**
