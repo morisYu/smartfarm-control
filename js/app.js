@@ -611,6 +611,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 펌웨어 업로드 로직 (Web Serial STK500) ---
     
     btnInstallFw.addEventListener('click', async () => {
+        // 안드로이드 환경에서는 펌웨어 업로드 불가 (OS 커널 USB 드라이버 충돌)
+        if (/Android/i.test(navigator.userAgent)) {
+            alert(
+                '⚠️ 안드로이드에서는 펌웨어 업로드가 지원되지 않습니다.\n\n' +
+                '안드로이드 OS의 내장 USB 드라이버가 USB 인터페이스를 점유하여\n' +
+                'WebUSB 방식의 펌웨어 업로드가 차단됩니다.\n\n' +
+                '펌웨어 업로드는 PC의 Chrome 브라우저에서 진행해 주세요.'
+            );
+            return;
+        }
+
         // 1. 이미 연결된 시리얼 포트가 있다면 끊기 (부트로더 진입을 위해 포트를 해제해야 함)
         if (isConnected) {
             await serial.disconnect();
