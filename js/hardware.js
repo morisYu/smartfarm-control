@@ -108,7 +108,8 @@ window.SmartFarmHW = {
      * CFG:PUMP:7,5,RGB:9,10,11,BUZ:6,DHT:2,LIG:A0,SOIL:A1 형식
      */
     sendPinConfig: function(config) {
-        const cmd = `CFG:PUMP:${config.pumpDir},${config.pumpPwm},RGB:${config.rgbR},${config.rgbG},${config.rgbB},BUZ:${config.buzzer},DHT:${config.dht},LIG:${config.light},SOIL:${config.soil}\n`;
+        const lightType = config.lightType || 'DO';
+        const cmd = `CFG:PUMP:${config.pumpDir},${config.pumpPwm},RGB:${config.rgbR},${config.rgbG},${config.rgbB},BUZ:${config.buzzer},DHT:${config.dht},LIG:${config.light},SOIL:${config.soil},LIGHT_TYPE:${lightType}\n`;
         window.SmartFarmSerial.sendCommand(cmd);
     }
 };

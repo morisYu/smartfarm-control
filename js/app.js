@@ -129,7 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
         rgbG: document.getElementById('pin-rgb-g'),
         rgbB: document.getElementById('pin-rgb-b'),
         rgbType: document.getElementById('pin-rgb-type'),
-        pumpType: document.getElementById('pin-pump-type')
+        pumpType: document.getElementById('pin-pump-type'),
+        lightType: document.getElementById('pin-light-type')
     };
 
     // 상태 변수
@@ -583,11 +584,13 @@ document.addEventListener('DOMContentLoaded', () => {
             rgbG: pinInputs.rgbG.value.trim(),
             rgbB: pinInputs.rgbB.value.trim(),
             rgbType: pinInputs.rgbType.value,
-            pumpType: pinInputs.pumpType.value
+            pumpType: pinInputs.pumpType.value,
+            lightType: pinInputs.lightType.value
         };
 
-        // 빈 값이 있는지 확인
-        const hasEmpty = Object.values(config).some(val => val === '');
+        // 빈 값이 있는지 확인 (select 타입 설정값은 제외)
+        const pinOnlyKeys = ['dht','light','soil','pumpDir','pumpPwm','buzzer','rgbR','rgbG','rgbB'];
+        const hasEmpty = pinOnlyKeys.some(k => config[k] === '');
         if (hasEmpty) {
             alert('모든 핀 번호를 입력해주세요.');
             return;

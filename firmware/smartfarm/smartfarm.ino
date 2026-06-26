@@ -10,6 +10,8 @@ int pinLight = A0; // DO(디지털 출력) 조도센서 핀 - digitalRead로 읽
 int pinSoil = A1;
 int pinDht = 2; // DHT 온습도 센서 기본 핀
 
+bool lightDO = true; // true: DO 타입(digitalRead), false: AO 타입(analogRead)
+
 #define DHTTYPE DHT11 // 만약 DHT22를 쓰신다면 DHT22로 변경하세요
 DHT* dht = nullptr;
 
@@ -87,9 +89,15 @@ void loop() {
   if (currentMillis - lastSensorReadTime >= 200) {
     lastSensorReadTime = currentMillis;
     
-    // 조도센서: DO(디지털 출력) 타입이므로 digitalRead 사용
-    // DO=LOW(0) → 밝음(0), DO=HIGH(1) → 어두움(1023)
-    int l = digitalRead(pinLight) == HIGH ? 1023 : 0;
+    // lightDO 플래그에 따라 DO 또는 AO 방식으로 조도센서 읽기
+    int l;
+    if (lightDO) {
+      // DO 타입: HIGH(어두움)=1023, LOW(밝음)=0
+      l = digitalRead(pinLight) == HIGH ? 1023 : 0;
+    } else {
+      // AO 타입: 0~1023 연속 아날로그 값
+      l = analogRead(pinLight);
+    }
     int s = analogRead(pinSoil);
     
     Serial.print("H:"); Serial.print(cachedH);
@@ -107,7 +115,11 @@ void updatePinModes() {
   pinMode(pinRgbR, OUTPUT);
   pinMode(pinRgbG, OUTPUT);
   pinMode(pinRgbB, OUTPUT);
-  pinMode(pinLight, INPUT); // DO 조도센서 - 디지털 입력
+  // lightDO 설정에 따라 핀 모드 결정
+  if (lightDO) {
+    pinMode(pinLight, INPUT); // DO: 디지털 입력
+  }
+  // AO일 때는 analogRead가 자동으로 아날로그 입력으로 설정함
   
   digitalWrite(pinPumpDir, LOW);
   analogWrite(pinPumpPwm, 0);
@@ -159,6 +171,16 @@ void parseConfigString(String cmd) {
     }
     dht = new DHT(pinDht, DHTTYPE);
     dht->begin();
+  }
+
+  // 조도센서 타입 설정 (LIGHT_TYPE:DO 또는 LIGHT_TYPE:AO)
+  int ltIdx = cmd.indexOf("LIGHT_TYPE:");
+  if(ltIdx != -1) {
+    int comma = cmd.indexOf(',', ltIdx);
+    if(comma == -1) comma = cmd.length();
+    String ltVal = cmd.substring(ltIdx + 11, comma);
+    ltVal.trim();
+    lightDO = (ltVal == "DO");
   }
 
   // 변경된 핀 번호를 적용
