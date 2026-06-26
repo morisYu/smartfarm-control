@@ -8,26 +8,28 @@ let avrbro = null;
 
 // --- Web Serial Polyfill 초기화 (안드로이드/비호환 브라우저 지원) ---
 const isAndroid = /Android/i.test(navigator.userAgent);
-if (!navigator.serial || isAndroid) {
-    if (navigator.usb) {
-        try {
-            const { serial: polyfillSerial } = await Promise.race([
-                import('https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js'),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Polyfill 로드 타임아웃 (5초)')), 5000))
-            ]);
-            Object.defineProperty(navigator, 'serial', {
-                value: polyfillSerial,
-                writable: true,
-                configurable: true
-            });
-            console.log("[App] Web Serial Polyfill (WebUSB) 적용 완료.");
-        } catch (e) {
-            console.error("[App] Web Serial Polyfill 로드 실패:", e);
+(async () => {
+    if (!navigator.serial || isAndroid) {
+        if (navigator.usb) {
+            try {
+                const { serial: polyfillSerial } = await Promise.race([
+                    import('https://unpkg.com/web-serial-polyfill@1.0.15/dist/serial.js'),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Polyfill 로드 타임아웃 (5초)')), 5000))
+                ]);
+                Object.defineProperty(navigator, 'serial', {
+                    value: polyfillSerial,
+                    writable: true,
+                    configurable: true
+                });
+                console.log("[App] Web Serial Polyfill (WebUSB) 적용 완료.");
+            } catch (e) {
+                console.error("[App] Web Serial Polyfill 로드 실패:", e);
+            }
+        } else {
+            console.warn("[App] WebUSB 미지원. 안드로이드에서 시리얼을 사용하려면 HTTPS 또는 localhost로 접속하세요.");
         }
-    } else {
-        console.warn("[App] WebUSB 미지원. 안드로이드에서 시리얼을 사용하려면 HTTPS 또는 localhost로 접속하세요.");
     }
-}
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
     // 전역 모듈 가져오기
