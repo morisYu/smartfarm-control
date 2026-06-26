@@ -217,9 +217,17 @@ window.SmartFarmSerial = {
 
     /**
      * 수신 루프 (데이터 읽기)
+     * - 안드로이드 WebUSB Polyfill 환경에서 스트림이 잠기는 문제를 방지하기 위해
+     *   에러 발생 시 스트림을 완전히 정리한 후 재시도하도록 구현
      */
     readLoop: async function() {
-        while (this.port && this.port.readable && this.keepReading) {
+        while (this.port && this.keepReading) {
+            // port.readable이 잠겨있으면 루프 탈출
+            if (!this.port.readable) {
+                this.log('[readLoop] port.readable 없음 - 루프 종료');
+                break;
+            }
+
             const decoder = new TextDecoderStream();
             this.readableStreamClosed = this.port.readable.pipeTo(decoder.writable);
             this.reader = decoder.readable.getReader();
@@ -227,15 +235,18 @@ window.SmartFarmSerial = {
             let buffer = '';
 
             try {
-                while (true) {
+                while (this.keepReading) {
                     const { value, done } = await this.reader.read();
-                    if (done) break;
+                    if (done) {
+                        this.log('[readLoop] 스트림 종료(done)');
+                        break;
+                    }
                     if (value) {
                         buffer += value;
                         // 개행 문자(\n) 기준으로 패킷 분리
                         let lines = buffer.split('\n');
                         // 마지막 요소는 아직 불완전할 수 있으므로 버퍼에 남김
-                        buffer = lines.pop(); 
+                        buffer = lines.pop();
 
                         for (let line of lines) {
                             line = line.trim();
@@ -246,11 +257,30 @@ window.SmartFarmSerial = {
                     }
                 }
             } catch (error) {
-                // 스트림 읽기 에러 발생 (포트 닫힘 등)
-                // this.log('수신 루프 중지: ' + error.message);
+                // keepReading=true 인데 에러 발생 = 안드로이드에서 간헐적 스트림 끊김
+                if (this.keepReading) {
+                    console.warn('[Serial] readLoop 에러 (재시도 예정):', error.message);
+                }
             } finally {
-                this.reader.releaseLock();
+                // 스트림 리소스를 반드시 정리한 후 다음 반복으로
+                try {
+                    this.reader.releaseLock();
+                } catch(e) {}
+
+                // 이전 pipeTo 스트림이 완전히 닫힐 때까지 대기 (잠금 방지 핵심)
+                if (this.readableStreamClosed) {
+                    try {
+                        await this.readableStreamClosed;
+                    } catch(e) {}
+                    this.readableStreamClosed = null;
+                }
+            }
+
+            // keepReading=true 이면 잠시 후 자동 재시도 (안드로이드 일시적 끊김 복구)
+            if (this.keepReading) {
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
         }
+        this.log('[readLoop] 수신 루프 완전 종료');
     }
 };
