@@ -45,6 +45,12 @@ class SmartFarmCategory extends Blockly.ToolboxCategory {
             this.rowDiv_.style.cursor = 'pointer';
             this.rowDiv_.style.marginBottom = '4px';
             this.rowDiv_.style.borderRadius = '8px';
+
+            if (this.name_ === '빈칸') {
+                this.rowDiv_.style.opacity = '0';
+                this.rowDiv_.style.pointerEvents = 'none';
+                this.rowDiv_.style.cursor = 'default';
+            }
         }
 
         // 아이콘+텍스트 컨테이너를 세로 배치
