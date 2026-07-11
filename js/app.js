@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 상태 변수
     let isConnected = false;
+    let pumpHeartbeatInterval = null; // 펌프 가동 중 하트비트 인터벌
 
     // --- 다크 모드 토글 ---
     const btnThemeToggle = document.getElementById('btn-theme-toggle');
@@ -281,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 연결 해제 이벤트 콜백 (물리적 분리 등)
     serial.onDisconnect = () => {
+        if (pumpHeartbeatInterval) { clearInterval(pumpHeartbeatInterval); pumpHeartbeatInterval = null; }
         updateConnectionUI(false);
     };
 
@@ -393,6 +395,16 @@ document.addEventListener('DOMContentLoaded', () => {
         statusPump.textContent = '가동 중';
         statusPump.classList.replace('bg-gray-200', 'bg-blue-100');
         statusPump.classList.replace('text-gray-600', 'text-blue-700');
+        // 안전 타임아웃 방지용 하트비트 (1초마다 PING 전송)
+        if (pumpHeartbeatInterval) clearInterval(pumpHeartbeatInterval);
+        pumpHeartbeatInterval = setInterval(() => {
+            if (isConnected) {
+                serial.sendCommand('PING\n');
+            } else {
+                clearInterval(pumpHeartbeatInterval);
+                pumpHeartbeatInterval = null;
+            }
+        }, 1000);
     });
 
     btnPumpOff.addEventListener('click', () => {
@@ -401,6 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusPump.textContent = '정지';
         statusPump.classList.replace('bg-blue-100', 'bg-gray-200');
         statusPump.classList.replace('text-blue-700', 'text-gray-600');
+        if (pumpHeartbeatInterval) { clearInterval(pumpHeartbeatInterval); pumpHeartbeatInterval = null; }
     });
 
     // RGB LED 버튼

@@ -7,6 +7,8 @@
  */
 
 window.SmartFarmHW = {
+    _pumpRampInterval: null,
+    
     
     getPumpType: function() {
         const saved = localStorage.getItem('smartfarm_pins');
@@ -23,16 +25,40 @@ window.SmartFarmHW = {
      *  워터 펌프 (DC 모터/릴레이) 제어
      *  =================================== */
     turnOnPump: function(dir, speed) {
-        if (this.getPumpType() === 'low') {
-            // Active-Low 방식의 릴레이 모듈일 경우 (LOW 신호에서 ON)
-            // 보통 방향핀(dir)은 사용하지 않거나 고정되어 있으며, PWM 핀으로 신호를 줍니다.
-            // 255-speed로 반전하면 speed가 클수록 값이 작아져서(LOW에 가까워져서) 더 세게 켜집니다.
-            speed = 255 - speed;
+        if (this._pumpRampInterval) {
+            clearInterval(this._pumpRampInterval);
+            this._pumpRampInterval = null;
         }
-        window.SmartFarmSerial.sendCommand(`PUMP:${dir},${speed}\n`);
+
+        let targetSpeed = parseInt(speed, 10);
+        let currentSpeed = 0;
+        let isLowType = (this.getPumpType() === 'low');
+        
+        // 목표 속도 도달 여부를 체크하고 명령을 전송하는 내부 함수
+        const sendPumpCommand = (val) => {
+            let finalSpeed = isLowType ? (255 - val) : val;
+            window.SmartFarmSerial.sendCommand(`PUMP:0,${finalSpeed}\n`);
+        };
+
+        // 소프트 스타트: 0부터 목표 속도까지 빠르게 서서히 증가 (돌입 전류 방지)
+        this._pumpRampInterval = setInterval(() => {
+            currentSpeed += 30; // 한 번에 올릴 속도 단위 (클수록 빨리 켜짐)
+            if (currentSpeed >= targetSpeed) {
+                currentSpeed = targetSpeed;
+                sendPumpCommand(currentSpeed);
+                clearInterval(this._pumpRampInterval);
+                this._pumpRampInterval = null;
+            } else {
+                sendPumpCommand(currentSpeed);
+            }
+        }, 30); // 30ms 간격으로 증가
     },
     
     turnOffPump: function() {
+        if (this._pumpRampInterval) {
+            clearInterval(this._pumpRampInterval);
+            this._pumpRampInterval = null;
+        }
         let speed = 0;
         let dir = 0;
         if (this.getPumpType() === 'low') {
@@ -41,6 +67,7 @@ window.SmartFarmHW = {
             speed = 255;
             dir = 1;
         }
+        // Active-High: dir=0(LOW) + speed=0 → 모터 정지
         window.SmartFarmSerial.sendCommand(`PUMP:${dir},${speed}\n`);
     },
 

@@ -533,8 +533,8 @@ Blockly.C.forBlock['controls_repeat_ext'] = function(block) {
 // 핀 설정 헬퍼: localStorage에서 사용자가 설정한 핀 번호를 읽어옵니다.
 function _getPinConfig() {
     const defaults = {
-        dht: '2', light: 'A0', soil: 'A1',
-        pumpDir: '7', pumpPwm: '5', buzzer: '6',
+        dht: '3', light: 'A0', soil: 'A1',
+        pumpDir: '7', pumpPwm: '6', buzzer: '4',
         rgbR: '9', rgbG: '10', rgbB: '11',
         rgbType: 'cathode', pumpType: 'high', lightType: 'DO'
     };
