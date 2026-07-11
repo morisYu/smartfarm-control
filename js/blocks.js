@@ -529,33 +529,66 @@ Blockly.C.forBlock['controls_repeat_ext'] = function(block) {
 };
 
 // ── 시작 / 스마트팜 전용 블록 ─────────────────────────────────────────────
+
+// 핀 설정 헬퍼: localStorage에서 사용자가 설정한 핀 번호를 읽어옵니다.
+function _getPinConfig() {
+    const defaults = {
+        dht: '2', light: 'A0', soil: 'A1',
+        pumpDir: '7', pumpPwm: '5', buzzer: '6',
+        rgbR: '9', rgbG: '10', rgbB: '11',
+        rgbType: 'cathode', pumpType: 'high', lightType: 'DO'
+    };
+    try {
+        const saved = localStorage.getItem('smartfarm_pins');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return Object.assign(defaults, parsed);
+        }
+    } catch(e) {}
+    return defaults;
+}
+
 Blockly.C.forBlock['sf_start']     = function(block) { return '\n'; };
 Blockly.C.forBlock['sf_get_temp']  = function(block) { return ['getTemperature()',  Blockly.C.ORDER_ATOMIC]; };
 Blockly.C.forBlock['sf_get_humid'] = function(block) { return ['getHumidity()',     Blockly.C.ORDER_ATOMIC]; };
-Blockly.C.forBlock['sf_get_light'] = function(block) { return ['analogRead(A0)',    Blockly.C.ORDER_ATOMIC]; };
-Blockly.C.forBlock['sf_get_soil']  = function(block) { return ['analogRead(A1)',    Blockly.C.ORDER_ATOMIC]; };
+Blockly.C.forBlock['sf_get_light'] = function(block) {
+    const pins = _getPinConfig();
+    return [`analogRead(${pins.light})`,    Blockly.C.ORDER_ATOMIC];
+};
+Blockly.C.forBlock['sf_get_soil']  = function(block) {
+    const pins = _getPinConfig();
+    return [`analogRead(${pins.soil})`,    Blockly.C.ORDER_ATOMIC];
+};
 
 Blockly.C.forBlock['sf_pump_on'] = function(block) {
+    const pins = _getPinConfig();
     const speed = Blockly.C.valueToCode(block, 'SPEED', Blockly.C.ORDER_ATOMIC) || '0';
-    return `  digitalWrite(7, HIGH);\n  analogWrite(5, ${speed});\n`;
+    return `  digitalWrite(${pins.pumpDir}, HIGH);\n  analogWrite(${pins.pumpPwm}, ${speed});\n`;
 };
 Blockly.C.forBlock['sf_pump_off'] = function(block) {
-    return `  digitalWrite(7, LOW);\n  analogWrite(5, 0);\n`;
+    const pins = _getPinConfig();
+    return `  digitalWrite(${pins.pumpDir}, LOW);\n  analogWrite(${pins.pumpPwm}, 0);\n`;
 };
 Blockly.C.forBlock['sf_rgb_set'] = function(block) {
+    const pins = _getPinConfig();
     const r = Blockly.C.valueToCode(block, 'R', Blockly.C.ORDER_ATOMIC) || '0';
     const g = Blockly.C.valueToCode(block, 'G', Blockly.C.ORDER_ATOMIC) || '0';
     const b = Blockly.C.valueToCode(block, 'B', Blockly.C.ORDER_ATOMIC) || '0';
-    return `  analogWrite(9, ${r});\n  analogWrite(10, ${g});\n  analogWrite(11, ${b});\n`;
+    return `  analogWrite(${pins.rgbR}, ${r});\n  analogWrite(${pins.rgbG}, ${g});\n  analogWrite(${pins.rgbB}, ${b});\n`;
 };
 Blockly.C.forBlock['sf_rgb_off'] = function(block) {
-    return `  analogWrite(9, 0);\n  analogWrite(10, 0);\n  analogWrite(11, 0);\n`;
+    const pins = _getPinConfig();
+    return `  analogWrite(${pins.rgbR}, 0);\n  analogWrite(${pins.rgbG}, 0);\n  analogWrite(${pins.rgbB}, 0);\n`;
 };
 Blockly.C.forBlock['sf_buzzer_on'] = function(block) {
+    const pins = _getPinConfig();
     const freq = Blockly.C.valueToCode(block, 'FREQ', Blockly.C.ORDER_ATOMIC) || '1000';
-    return `  tone(8, ${freq});\n`;
+    return `  tone(${pins.buzzer}, ${freq});\n`;
 };
-Blockly.C.forBlock['sf_buzzer_off'] = function(block) { return `  noTone(8);\n`; };
+Blockly.C.forBlock['sf_buzzer_off'] = function(block) {
+    const pins = _getPinConfig();
+    return `  noTone(${pins.buzzer});\n`;
+};
 Blockly.C.forBlock['sf_delay'] = function(block) {
     const sec = Blockly.C.valueToCode(block, 'SEC', Blockly.C.ORDER_ATOMIC) || '1';
     return `  delay((int)((${sec})*1000));\n`;

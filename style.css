@@ -53,6 +53,7 @@ input[type="color"]::-webkit-color-swatch {
 /* 카테고리 컨텐츠 영역 */
 .blocklyToolboxContents {
     padding: 4px !important;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
 }
 
 /* 아이콘과 텍스트를 세로로 배치 (엔트리 스타일 핵심) */
