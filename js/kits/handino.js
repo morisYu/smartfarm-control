@@ -23,7 +23,7 @@
         name: '핸드이노',
         icon: '🤖',
         color: '#8b5cf6',         // 보라색 계열
-        headerColorClass: 'bg-violet-600 dark:bg-slate-800',
+        headerColorClass: 'bg-violet-50 dark:bg-slate-800',
 
         // 센서: 핸드이노에는 센서가 없음
         sensors: [],

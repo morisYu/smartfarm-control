@@ -138,6 +138,7 @@ function buildToolbox(kit) {
     // 인공지능(AI) 카테고리 추가
     xml += `
     <category name="인공지능(AI)" colour="#e83e8c">
+        <block type="ai_tts_setup"></block>
         <block type="ai_tts">
             <value name="TEXT">
                 <shadow type="text">
@@ -172,34 +173,117 @@ function getBlockStorageKey() {
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // 코드 미리보기 토글 로직
+    const btnTogglePreview = document.getElementById('btn-toggle-preview');
+    const previewSection = document.getElementById('preview-section');
+    const previewResizer = document.getElementById('preview-resizer');
+    
+    if (btnTogglePreview && previewSection) {
+        btnTogglePreview.addEventListener('click', () => {
+            previewSection.classList.toggle('hidden');
+            if (previewResizer) previewResizer.classList.toggle('hidden');
+            
+            if (previewSection.classList.contains('hidden')) {
+                btnTogglePreview.classList.add('bg-gray-200', 'dark:bg-slate-700');
+                btnTogglePreview.classList.remove('bg-white', 'dark:bg-slate-800');
+            } else {
+                btnTogglePreview.classList.remove('bg-gray-200', 'dark:bg-slate-700');
+                btnTogglePreview.classList.add('bg-white', 'dark:bg-slate-800');
+            }
+            if (workspace) {
+                setTimeout(() => Blockly.svgResize(workspace), 50);
+            }
+        });
+    }
+
+    // 미리보기 창 리사이즈 (드래그) 로직
+    if (previewResizer && previewSection) {
+        let isResizing = false;
+
+        previewResizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            previewSection.style.transition = 'none'; // 드래그 중 부드러운 전환 끄기
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            // 윈도우 우측 끝에서 마우스 X 좌표까지의 거리를 계산 (패딩 및 갭 고려)
+            const newWidth = document.body.clientWidth - e.clientX - 16;
+            if (newWidth > 150 && newWidth < document.body.clientWidth * 0.7) {
+                previewSection.style.width = newWidth + 'px';
+                if (workspace) Blockly.svgResize(workspace);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = 'default';
+                previewSection.style.transition = ''; // Tailwind transition 클래스 복구
+            }
+        });
+    }
+
     // 탭 전환 로직
     const tabDashboard = document.getElementById('tab-dashboard');
     const tabCoding = document.getElementById('tab-coding');
     const viewDashboard = document.getElementById('view-dashboard');
     const viewCoding = document.getElementById('view-coding');
     
+    // 모바일/태블릿용 뷰 전환 버튼
+    const btnViewToggle = document.getElementById('btn-view-toggle');
+    const iconDash = document.getElementById('icon-view-dashboard');
+    const textDash = document.getElementById('text-view-dashboard');
+    const iconCode = document.getElementById('icon-view-coding');
+    const textCode = document.getElementById('text-view-coding');
+
+    if (btnViewToggle) {
+        btnViewToggle.addEventListener('click', () => {
+            if (!viewDashboard.classList.contains('hidden')) {
+                tabCoding.click();
+            } else {
+                tabDashboard.click();
+            }
+        });
+    }
+    
     tabDashboard.addEventListener('click', () => {
         // 스타일 토글
-        tabDashboard.classList.replace('bg-transparent', 'bg-white/20');
-        tabDashboard.classList.replace('text-emerald-100', 'text-white');
-        
-        tabCoding.classList.replace('bg-white/20', 'bg-transparent');
-        tabCoding.classList.replace('text-white', 'text-emerald-100');
+        tabDashboard.className = 'text-sm font-bold px-6 py-2 rounded-full shadow-sm transition backdrop-blur-sm bg-white/80 dark:bg-white/20 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 hover:bg-white';
+        tabCoding.className = 'text-sm font-bold px-6 py-2 rounded-full transition bg-transparent text-gray-500 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10 border border-transparent';
         
         // 뷰 토글
         viewDashboard.classList.remove('hidden');
         viewCoding.classList.add('hidden');
+        viewCoding.classList.remove('flex');
+        
+        // 토글 버튼 UI 갱신
+        if (btnViewToggle) {
+            iconDash.classList.remove('hidden'); iconDash.classList.add('block');
+            textDash.classList.remove('hidden'); textDash.classList.add('block');
+            iconCode.classList.remove('block'); iconCode.classList.add('hidden');
+            textCode.classList.remove('block'); textCode.classList.add('hidden');
+        }
     });
 
     tabCoding.addEventListener('click', () => {
-        tabCoding.classList.replace('bg-transparent', 'bg-white/20');
-        tabCoding.classList.replace('text-emerald-100', 'text-white');
+        // 스타일 토글
+        tabCoding.className = 'text-sm font-bold px-6 py-2 rounded-full shadow-sm transition backdrop-blur-sm bg-white/80 dark:bg-white/20 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 hover:bg-white';
+        tabDashboard.className = 'text-sm font-bold px-6 py-2 rounded-full transition bg-transparent text-gray-500 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10 border border-transparent';
         
-        tabDashboard.classList.replace('bg-white/20', 'bg-transparent');
-        tabDashboard.classList.replace('text-white', 'text-emerald-100');
-        
+        // 뷰 토글
         viewDashboard.classList.add('hidden');
         viewCoding.classList.remove('hidden');
+        viewCoding.classList.add('flex');
+        
+        // 토글 버튼 UI 갱신
+        if (btnViewToggle) {
+            iconDash.classList.remove('block'); iconDash.classList.add('hidden');
+            textDash.classList.remove('block'); textDash.classList.add('hidden');
+            iconCode.classList.remove('hidden'); iconCode.classList.add('block');
+            textCode.classList.remove('hidden'); textCode.classList.add('block');
+        }
         
         // Blockly 창 리사이즈 (숨겨져 있다가 나타날 때 크기 재계산 필요)
         if (workspace) {

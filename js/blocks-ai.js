@@ -1,5 +1,26 @@
 (function() {
-    // 1. TTS 블록
+    // 1. TTS 목소리 설정 블록
+    Blockly.Blocks['ai_tts_setup'] = {
+        init: function() {
+            this.appendDummyInput()
+                .appendField('🗣️ 목소리 설정:')
+                .appendField(new Blockly.FieldDropdown([
+                    ['여성 (기본)', 'female'],
+                    ['남성', 'male'],
+                    ['어린아이', 'child']
+                ]), 'VOICE_STYLE');
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setColour('#e83e8c');
+            this.setTooltip('이어지는 TTS 읽어주기 블록의 목소리(음낮이 및 속도)를 변경합니다.');
+        }
+    };
+    jsGen.forBlock['ai_tts_setup'] = function(block, generator) {
+        const style = block.getFieldValue('VOICE_STYLE');
+        return `window.AI.setVoiceStyle('${style}');\n`;
+    };
+
+    // 1-1. TTS 블록
     Blockly.Blocks['ai_tts'] = {
         init: function() {
             this.appendValueInput('TEXT')
@@ -125,5 +146,16 @@
         const gesture = block.getFieldValue('GESTURE');
         return [`window.AI.isGesture('${gesture}')`, jsGen.ORDER_ATOMIC];
     };
+
+    // 아두이노 미리보기(C 코드 생성) 오류 방지용 (AI 블록은 PC에서만 동작하므로 주석 또는 기본값 반환)
+    if (typeof Blockly.C !== 'undefined') {
+        Blockly.C.forBlock['ai_tts'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 인공지능 TTS\n'; };
+        Blockly.C.forBlock['ai_hand_start'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 손 인식 카메라 켜기\n'; };
+        Blockly.C.forBlock['ai_hand_stop'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 카메라 끄기\n'; };
+        Blockly.C.forBlock['ai_hand_recognize'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 손 인식하기\n'; };
+        Blockly.C.forBlock['ai_hand_get_angle'] = function(block) { return ['0', Blockly.C.ORDER_ATOMIC]; };
+        Blockly.C.forBlock['ai_hand_is_folded'] = function(block) { return ['false', Blockly.C.ORDER_ATOMIC]; };
+        Blockly.C.forBlock['ai_hand_is_gesture'] = function(block) { return ['false', Blockly.C.ORDER_ATOMIC]; };
+    }
 
 })();

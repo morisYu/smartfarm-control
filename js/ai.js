@@ -7,6 +7,10 @@ window.AI = (function() {
     let resolveRecognition = null;
     
     let isModelLoading = false;
+    
+    // TTS 설정 (기본값: 여성)
+    let ttsPitch = 1.4;
+    let ttsRate = 1.1;
 
     // 초기화 및 DOM 요소 생성
     function initVisionDOM() {
@@ -149,13 +153,28 @@ window.AI = (function() {
                 
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'ko-KR';
-                utterance.rate = 1.0;
+                utterance.pitch = ttsPitch;
+                utterance.rate = ttsRate;
                 
                 utterance.onend = () => { resolve(); };
                 utterance.onerror = () => { resolve(); };
                 
                 window.speechSynthesis.speak(utterance);
             });
+        },
+        
+        setVoiceStyle: function(style) {
+            if (style === 'male') {
+                ttsPitch = 0.4; // 확실히 낮은 톤
+                ttsRate = 0.8;  // 약간 느리게
+            } else if (style === 'child') {
+                ttsPitch = 2.0; // 최대 높은 톤
+                ttsRate = 1.4;  // 다소 빠르게
+            } else { 
+                // female (기본값)
+                ttsPitch = 1.4; // 약간 높은 톤
+                ttsRate = 1.1;
+            }
         },
         
         stopSpeech: function() {

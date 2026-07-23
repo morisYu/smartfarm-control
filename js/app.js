@@ -69,7 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let pumpHeartbeatInterval = null;
 
     // --- DOM 요소 참조 ---
-    const kitSelector = document.getElementById('kit-selector');
+    const kitSelectorBtn = document.getElementById('kit-selector-btn');
+    const kitSelectorMenu = document.getElementById('kit-selector-menu');
+    const kitSelectorLabel = document.getElementById('kit-selector-label');
     const btnConnect = document.getElementById('btn-connect');
     const statusEl = document.getElementById('connection-status');
     const logEl = document.getElementById('serial-log');
@@ -171,21 +173,47 @@ document.addEventListener('DOMContentLoaded', () => {
     // 키트 선택기 초기화
     // ============================================================
     function initKitSelector() {
-        kitSelector.innerHTML = '';
+        if (!kitSelectorMenu || !kitSelectorLabel) return;
+        
+        kitSelectorMenu.innerHTML = '';
         const kits = window.KitRegistry.getAll();
+        
         Object.keys(kits).forEach(kitId => {
             const kit = kits[kitId];
-            const option = document.createElement('option');
-            option.value = kitId;
-            option.textContent = `${kit.icon} ${kit.name}`;
-            if (kitId === currentKitId) option.selected = true;
-            kitSelector.appendChild(option);
+            const btn = document.createElement('button');
+            const isSelected = kitId === currentKitId;
+            
+            btn.className = `w-full text-left px-4 py-2.5 text-sm font-bold transition flex items-center gap-3 ${isSelected ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-slate-700/50' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700'}`;
+            btn.innerHTML = `<span class="text-base">${kit.icon}</span> <span>${kit.name}</span>`;
+            
+            btn.addEventListener('click', () => {
+                kitSelectorMenu.classList.add('hidden');
+                if (kitId !== currentKitId) {
+                    switchKit(kitId);
+                    initKitSelector(); // 선택 상태 갱신을 위해 다시 렌더링
+                }
+            });
+            
+            kitSelectorMenu.appendChild(btn);
+            
+            if (isSelected) {
+                kitSelectorLabel.innerHTML = `<span class="mr-1">${kit.icon}</span> ${kit.name}`;
+            }
         });
     }
 
-    kitSelector.addEventListener('change', (e) => {
-        switchKit(e.target.value);
-    });
+    if (kitSelectorBtn && kitSelectorMenu) {
+        kitSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            kitSelectorMenu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!kitSelectorBtn.contains(e.target) && !kitSelectorMenu.contains(e.target)) {
+                kitSelectorMenu.classList.add('hidden');
+            }
+        });
+    }
 
     // ============================================================
     // 키트 전환 핵심 함수
@@ -249,11 +277,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // 기존 배경 클래스 제거
         mainHeader.className = mainHeader.className.replace(/bg-\w+-\d+/g, '').trim();
         // 새 배경 클래스 추가
-        const colorClass = kit.headerColorClass || 'bg-indigo-600 dark:bg-slate-800';
+        const colorClass = kit.headerColorClass || 'bg-indigo-50 dark:bg-slate-800';
         colorClass.split(' ').forEach(cls => mainHeader.classList.add(cls));
         // 기본 클래스 보장
-        ['text-white', 'h-14', 'flex', 'justify-between', 'items-center', 'px-4', 'shadow-md', 'flex-shrink-0', 'z-10', 'transition-colors', 'duration-300', 'border-b', 'border-transparent', 'dark:border-slate-700'].forEach(cls => {
-            mainHeader.classList.add(cls);
+        ['text-gray-900', 'dark:text-white', 'h-16', 'flex', 'justify-between', 'items-center', 'px-6', 'shadow-sm', 'flex-shrink-0', 'z-10', 'transition-colors', 'duration-300', 'border-b', 'border-gray-200', 'dark:border-slate-700/50'].forEach(cls => {
+            if (!mainHeader.classList.contains(cls)) {
+                mainHeader.classList.add(cls);
+            }
         });
     }
 

@@ -29,7 +29,7 @@ window.KitRegistry.register('smartfarm', {
     name: '스마트팜 키트',
     icon: '🌱',
     color: '#10b981',
-    headerColorClass: 'bg-emerald-600',
+    headerColorClass: 'bg-emerald-50 dark:bg-slate-800',
     
     sensors: [
         { id: 'temp', label: '온도', unit: '°C', icon: '🌡️', color: '#ef4444' },
@@ -338,8 +338,8 @@ window.KitRegistry.register('smartfarm', {
     ],
 
     categoryIcons: {
-        '스마트팜 센서': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>',
-        '스마트팜 제어': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0,0.43,0.17,0.47,0.41L10.2,5.35C9.61,5.59,9.08,5.92,8.58,6.3L6.19,5.34C5.97,5.26,5.72,5.33,5.6,5.55L3.68,8.87 C3.57,9.07,3.62,9.34,3.8,9.48l2.03,1.58C5.79,11.36,5.77,11.68,5.77,12c0,0.32,0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>'
+        '스마트팜 센서': createSvgDataUri(`<rect rx="8" width="48" height="48" fill="#22C55E" opacity="0.18"/><path d="M24 36 v-12" stroke="#22C55E" stroke-width="3" stroke-linecap="round"/><path d="M24 28 C18 28 16 22 16 22 C16 22 22 22 24 28 Z" fill="#22C55E"/><path d="M24 24 C30 24 32 18 32 18 C32 18 26 18 24 24 Z" fill="#22C55E"/><circle cx="34" cy="30" r="4" fill="#3B82F6" opacity="0.8"/><circle cx="14" cy="32" r="3" fill="#EAB308" opacity="0.8"/>`),
+        '스마트팜 제어': createSvgDataUri(`<rect rx="8" width="48" height="48" fill="#8B5CF6" opacity="0.18"/><rect x="14" y="20" width="20" height="16" rx="2" fill="#8B5CF6"/><circle cx="19" cy="28" r="3" fill="white" opacity="0.5"/><circle cx="29" cy="28" r="3" fill="white" opacity="0.5"/><path d="M24 20 v-8 M20 16 l8 -4" stroke="#8B5CF6" stroke-width="3" stroke-linecap="round"/>`)
     },
 
     parseData: function(data, sensorValues) {
