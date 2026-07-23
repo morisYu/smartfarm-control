@@ -2,9 +2,9 @@
  * serial.js
  * Web Serial API를 활용한 아두이노 통신 코어 모듈
  * 
- * 향후 Blockly 환경에서도 접근 가능하도록 전역 네임스페이스(window.SmartFarmSerial)에 등록
+ * 향후 Blockly 환경에서도 접근 가능하도록 전역 네임스페이스(window.ArduinoSerial)에 등록
  */
-window.SmartFarmSerial = {
+window.ArduinoSerial = {
     port: null,
     reader: null,
     readableStreamClosed: null,
@@ -284,3 +284,5 @@ window.SmartFarmSerial = {
         this.log('[readLoop] 수신 루프 완전 종료');
     }
 };
+
+window.SmartFarmSerial = window.ArduinoSerial;

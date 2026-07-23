@@ -1,13 +1,21 @@
 /**
  * coding.js
  * 블록 코딩 페이지의 UI 로직 및 코드 실행을 담당합니다.
+ * 키트별 toolbox 카테고리는 동적으로 생성됩니다.
  */
 
 // --- 1. Blockly Toolbox (도구상자) 정의 ---
-const toolbox = `
+/**
+ * 현재 키트에 맞는 toolbox XML을 생성합니다.
+ * @param {Object} kit - KitRegistry에서 가져온 키트 설정 객체 (null이면 공통 카테고리만)
+ * @returns {string} toolbox XML 문자열
+ */
+function buildToolbox(kit) {
+    // 공통 카테고리 (모든 키트에서 공유)
+    let xml = `
 <xml id="toolbox" style="display: none">
     <category name="이벤트" colour="#FFBF00">
-        <block type="sf_start"></block>
+        <block type="ard_start"></block>
     </category>
     <category name="논리" categorystyle="logic_category">
         <block type="controls_if"></block>
@@ -17,13 +25,16 @@ const toolbox = `
         <block type="logic_boolean"></block>
     </category>
     <category name="반복" categorystyle="loop_category">
-        <block type="sf_forever"></block>
+        <block type="ard_forever"></block>
         <block type="controls_repeat_ext">
             <value name="TIMES">
                 <shadow type="math_number"><field name="NUM">10</field></shadow>
             </value>
         </block>
         <block type="controls_whileUntil"></block>
+        <block type="ard_delay">
+            <value name="SEC"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+        </block>
     </category>
     <category name="수학" categorystyle="math_category">
         <block type="math_number"></block>
@@ -90,9 +101,7 @@ const toolbox = `
         </block>
     </category>
     <category name="리스트" categorystyle="list_category">
-        <block type="lists_create_with">
-            <mutation items="0"></mutation>
-        </block>
+        <block type="lists_create_with"><mutation items="0"></mutation></block>
         <block type="lists_create_with"></block>
         <block type="lists_repeat">
             <value name="NUM"><shadow type="math_number"><field name="NUM">5</field></shadow></value>
@@ -117,40 +126,49 @@ const toolbox = `
         <block type="lists_sort"></block>
     </category>
     <category name="변수" categorystyle="variable_category" custom="VARIABLE"></category>
-    <category name="함수" categorystyle="procedure_category" custom="PROCEDURE"></category>
-    <category name="스마트팜 센서" colour="#4CBFE6">
-        <block type="sf_get_temp"></block>
-        <block type="sf_get_humid"></block>
-        <block type="sf_get_light"></block>
-        <block type="sf_get_soil"></block>
-    </category>
-    <category name="스마트팜 제어" colour="#FF6680">
-        <block type="sf_pump_on">
-            <value name="SPEED"><shadow type="math_number"><field name="NUM">200</field></shadow></value>
+    <category name="함수" categorystyle="procedure_category" custom="PROCEDURE"></category>`;
+
+    // 키트 전용 카테고리 추가
+    if (kit && kit.toolboxCategories) {
+        kit.toolboxCategories.forEach(catXml => {
+            xml += '\n    ' + catXml;
+        });
+    }
+
+    // 인공지능(AI) 카테고리 추가
+    xml += `
+    <category name="인공지능(AI)" colour="#e83e8c">
+        <block type="ai_tts">
+            <value name="TEXT">
+                <shadow type="text">
+                    <field name="TEXT">안녕하세요</field>
+                </shadow>
+            </value>
         </block>
-        <block type="sf_pump_off"></block>
-        <block type="sf_rgb_set">
-            <value name="R"><shadow type="math_number"><field name="NUM">255</field></shadow></value>
-            <value name="G"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-            <value name="B"><shadow type="math_number"><field name="NUM">0</field></shadow></value>
-        </block>
-        <block type="sf_rgb_off"></block>
-        <block type="sf_buzzer_on">
-            <value name="FREQ"><shadow type="math_number"><field name="NUM">1000</field></shadow></value>
-        </block>
-        <block type="sf_buzzer_off"></block>
-        <block type="sf_delay">
-            <value name="SEC"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
-        </block>
-    </category>
+        <block type="ai_hand_start"></block>
+        <block type="ai_hand_stop"></block>
+        <block type="ai_hand_recognize"></block>
+        <block type="ai_hand_is_gesture"></block>
+        <block type="ai_hand_is_folded"></block>
+        <block type="ai_hand_get_angle"></block>
+    </category>`;
+
+    xml += `
     <category name="빈칸"></category>
-</xml>
-`;
+</xml>`;
+
+    return xml;
+}
 
 // --- 2. 초기화 및 이벤트 리스너 ---
 let workspace;
 let isRunning = false;
 let executionAbortController = null;
+
+function getBlockStorageKey() {
+    const kitId = localStorage.getItem('arduino_current_kit') || 'smartfarm';
+    return 'arduino_blocks_' + kitId;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -248,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Blockly 주입 (Injection) - 렌더러는 기본으로 두어 크기를 줄이고, 테마는 Zelos로 설정해 밝은 색상 유지
     workspace = Blockly.inject('blocklyDiv', {
-        toolbox: toolbox,
+        toolbox: buildToolbox(null),
         theme: Blockly.Themes ? Blockly.Themes.Zelos : undefined,
         grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
         trashcan: true,
@@ -267,21 +285,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    /**
+     * 키트 변경 시 Blockly toolbox를 업데이트합니다.
+     * @param {Object} kit - 키트 설정 객체
+     */
+    window.updateBlocklyToolbox = function(kit) {
+        if (workspace) {
+            workspace.updateToolbox(buildToolbox(kit));
+        }
+    };
+
+    /**
+     * Blockly 워크스페이스를 초기화합니다 (키트 전환 시).
+     */
+    window.clearBlocklyWorkspace = function() {
+        if (workspace) {
+            workspace.clear();
+        }
+    };
+
+    /**
+     * 키트별로 저장된 블록을 로드합니다.
+     */
+    window.loadBlocksForKit = function() {
+        if (!workspace) return;
+        workspace.clear();
+        const saved = localStorage.getItem(getBlockStorageKey());
+        if (saved) {
+            try {
+                Blockly.serialization.workspaces.load(JSON.parse(saved), workspace);
+            } catch(e) {
+                console.error('저장된 블록 로드 실패:', e);
+            }
+        }
+    };
+
     // --- 자동 저장 & 복구 시스템 ---
-    const STORAGE_KEY = 'smartfarm_block_backup';
     const indicator = document.getElementById('auto-save-indicator');
     let saveTimeout = null;
 
     // 1. 초기 로드 (자동 복구)
-    const savedBlocks = localStorage.getItem(STORAGE_KEY);
-    if (savedBlocks) {
-        try {
-            const json = JSON.parse(savedBlocks);
-            Blockly.serialization.workspaces.load(json, workspace);
-        } catch (e) {
-            console.error("저장된 블록을 불러오는데 실패했습니다.", e);
-        }
-    }
+    window.loadBlocksForKit();
 
     // 실시간 코드 변환 이벤트 연결 및 디바운싱 자동 저장
     workspace.addChangeListener((e) => {
@@ -303,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveTimeout = setTimeout(() => {
             try {
                 const state = Blockly.serialization.workspaces.save(workspace);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                localStorage.setItem(getBlockStorageKey(), JSON.stringify(state));
                 
                 // 상태 표시: 저장 완료
                 if (indicator) {
@@ -414,7 +458,7 @@ function updateCodePreview(event) {
     
     try {
         // 시작 블록 찾기 (전체 블록 중에서 검색)
-        const startBlocks = workspace.getAllBlocks().filter(b => b.type === 'sf_start');
+        const startBlocks = workspace.getAllBlocks().filter(b => b.type === 'ard_start');
         
         let jsCode = '';
         let cCode = '';
@@ -448,7 +492,7 @@ function updateCodePreview(event) {
 async function runCode() {
     if (isRunning) return;
     
-    const startBlocks = workspace.getAllBlocks().filter(b => b.type === 'sf_start');
+    const startBlocks = workspace.getAllBlocks().filter(b => b.type === 'ard_start');
     if (startBlocks.length === 0) {
         alert("작업 공간에 '▶ 시작하기' 블록이 없습니다. 먼저 추가해주세요!");
         return;
@@ -460,8 +504,8 @@ async function runCode() {
         return;
     }
 
-    if (!window.SmartFarmHW) {
-        alert("하드웨어 모듈(SmartFarmHW)을 찾을 수 없습니다.");
+    if (!window.ArduinoHW) {
+        alert("하드웨어 모듈(ArduinoHW)을 찾을 수 없습니다.");
         return;
     }
 
@@ -496,7 +540,9 @@ async function runCode() {
                 ${jsCode}
             } catch(e) {
                 console.error("블록 실행 중 오류:", e);
-                alert("코드 실행 중 오류가 발생했습니다: " + e.message);
+                if (e.message !== 'Cancelled') {
+                    alert("코드 실행 중 오류가 발생했습니다: " + e.message);
+                }
             }
         `;
         
@@ -515,9 +561,9 @@ async function runCode() {
         window.__isBlocklyCancelled = true;
         
         // 실행 종료 시 모든 액추에이터 끄기 (안전)
-        window.SmartFarmHW.turnOffPump();
-        window.SmartFarmHW.turnOffRgbLed();
-        window.SmartFarmHW.turnOffBuzzer();
+        window.ArduinoHW.turnOffPump();
+        window.ArduinoHW.turnOffRgbLed();
+        window.ArduinoHW.turnOffBuzzer();
     }
 }
 
@@ -534,9 +580,20 @@ function stopCode() {
     }
     
     // 현재 실행 중인 딜레이나 작업들을 강제 종료하기 위해 하드웨어를 즉시 멈춤
-    window.SmartFarmHW.turnOffPump();
-    window.SmartFarmHW.turnOffRgbLed();
-    window.SmartFarmHW.turnOffBuzzer();
+    window.ArduinoHW.turnOffPump();
+    window.ArduinoHW.turnOffRgbLed();
+    window.ArduinoHW.turnOffBuzzer();
+    
+    // AI 관련 리소스 즉시 종료
+    if (window.AI) {
+        window.AI.stopSpeech();
+        window.AI.stopHandTracking();
+    }
+    
+    // 핸드이노 모드일 경우 블록코딩 중지 시 모든 손가락 펴기 (165도)
+    if (window.currentKitId === 'handino' && window.ArduinoHW.setAllServos) {
+        window.ArduinoHW.setAllServos(165);
+    }
     
     isRunning = false;
     window.isBlocklyRunning = false;

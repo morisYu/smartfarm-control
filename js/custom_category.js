@@ -3,7 +3,7 @@
  * Blockly 툴박스 카테고리를 엔트리 스타일로 커스터마이징합니다.
  * 
  * Blockly 공식 API (ToolboxCategory 서브클래싱)를 사용합니다.
- * 참고: https://blocklycodelabs.dev/codelabs/custom-toolbox/
+ * 카테고리 아이콘은 각 키트에서 동적으로 제공됩니다.
  */
 
 // --- SVG 아이콘 생성 헬퍼 ---
@@ -22,12 +22,20 @@ const CATEGORY_ICONS = {
     '리스트':       createSvgDataUri(`<rect rx="8" width="48" height="48" fill="#E55B73" opacity="0.18"/><rect x="10" y="10" width="8" height="6" rx="2" fill="#E55B73"/><rect x="22" y="10" width="16" height="6" rx="2" fill="#E55B73" opacity="0.5"/><rect x="10" y="21" width="8" height="6" rx="2" fill="#E55B73"/><rect x="22" y="21" width="16" height="6" rx="2" fill="#E55B73" opacity="0.5"/><rect x="10" y="32" width="8" height="6" rx="2" fill="#E55B73"/><rect x="22" y="32" width="16" height="6" rx="2" fill="#E55B73" opacity="0.5"/>`),
     '변수':         createSvgDataUri(`<rect rx="8" width="48" height="48" fill="#E57E30" opacity="0.18"/><rect x="10" y="14" width="28" height="20" rx="5" fill="#E57E30"/><text x="24" y="29" text-anchor="middle" font-size="14" font-weight="bold" fill="white" font-family="Arial">X=</text>`),
     '함수':         createSvgDataUri(`<rect rx="8" width="48" height="48" fill="#B15CE6" opacity="0.18"/><path d="M14 16 h6 v6 h8 v-6 h6 v6 h0 v8 h-6 v6 h-8 v-6 h-6 Z" fill="#B15CE6" rx="2"/>`),
-    '스마트팜 센서': createSvgDataUri(`<rect rx="8" width="48" height="48" fill="#4CBFE6" opacity="0.18"/><path d="M24 40 L24 24" stroke="#2DA87A" stroke-width="3.5" stroke-linecap="round"/><path d="M24 24 Q14 14 18 6 Q22 12 24 9 Q26 12 30 6 Q34 14 24 24Z" fill="#4CBFE6"/><ellipse cx="24" cy="42" rx="8" ry="2.5" fill="#2DA87A" opacity="0.25"/>`),
-    '스마트팜 제어': createSvgDataUri(`<rect rx="8" width="48" height="48" fill="#FF6680" opacity="0.18"/><path d="M24 8 Q13 20 13 28 A11 11 0 0 0 35 28 Q35 20 24 8Z" fill="#FF6680"/><path d="M24 18 Q18 26 18 30 A6 6 0 0 0 30 30 Q30 26 24 18Z" fill="white" opacity="0.3"/>`),
+};
+
+/**
+ * 키트 전용 카테고리 아이콘을 등록합니다.
+ * @param {Object} icons - {카테고리명: svgDataUri} 객체
+ */
+window.registerCategoryIcons = function(icons) {
+    if (icons) {
+        Object.assign(CATEGORY_ICONS, icons);
+    }
 };
 
 // --- 커스텀 카테고리 클래스 ---
-class SmartFarmCategory extends Blockly.ToolboxCategory {
+class ArduinoCategory extends Blockly.ToolboxCategory {
     constructor(categoryDef, toolbox, opt_parent) {
         super(categoryDef, toolbox, opt_parent);
     }
@@ -137,6 +145,6 @@ class SmartFarmCategory extends Blockly.ToolboxCategory {
 Blockly.registry.register(
     Blockly.registry.Type.TOOLBOX_ITEM,
     Blockly.ToolboxCategory.registrationName,
-    SmartFarmCategory,
+    ArduinoCategory,
     true  // 기존 등록을 덮어씀
 );

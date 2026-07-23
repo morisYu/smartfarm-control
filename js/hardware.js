@@ -2,16 +2,26 @@
  * hardware.js
  * 스마트팜 하드웨어(액추에이터) 제어 모듈
  * 
- * 시리얼 통신 모듈(SmartFarmSerial)을 활용하여 구체적인 하드웨어 동작을 정의합니다.
+ * 시리얼 통신 모듈(ArduinoSerial)을 활용하여 구체적인 하드웨어 동작을 정의합니다.
  * Blockly 블록들에서 직접 이 함수들을 호출하게 됩니다. (모듈화/추상화)
  */
 
-window.SmartFarmHW = {
+window.ArduinoHW = {
     _pumpRampInterval: null,
     
     
+    _currentKit: 'smartfarm',
+
+    setCurrentKit: function(kitId) {
+        this._currentKit = kitId;
+    },
+
+    _getPinStorageKey: function() {
+        return 'arduino_pins_' + this._currentKit;
+    },
+
     getPumpType: function() {
-        const saved = localStorage.getItem('smartfarm_pins');
+        const saved = localStorage.getItem(this._getPinStorageKey());
         if (saved) {
             try {
                 const config = JSON.parse(saved);
@@ -37,7 +47,7 @@ window.SmartFarmHW = {
         // 목표 속도 도달 여부를 체크하고 명령을 전송하는 내부 함수
         const sendPumpCommand = (val) => {
             let finalSpeed = isLowType ? (255 - val) : val;
-            window.SmartFarmSerial.sendCommand(`PUMP:0,${finalSpeed}\n`);
+            window.ArduinoSerial.sendCommand(`PUMP:0,${finalSpeed}\n`);
         };
 
         // 소프트 스타트: 0부터 목표 속도까지 빠르게 서서히 증가 (돌입 전류 방지)
@@ -68,7 +78,46 @@ window.SmartFarmHW = {
             dir = 1;
         }
         // Active-High: dir=0(LOW) + speed=0 → 모터 정지
-        window.SmartFarmSerial.sendCommand(`PUMP:${dir},${speed}\n`);
+        window.ArduinoSerial.sendCommand(`PUMP:${dir},${speed}\n`);
+    },
+
+    /** ===================================
+     *  서보모터 (Servo Motor) 제어
+     *  =================================== */
+
+    // 서보 각도 저장 (블록코딩 읽기용)
+    _servoAngles: { thumb: 90, index: 90, middle: 90, ring: 90, pinky: 90 },
+
+    /**
+     * 개별 서보모터 각도 설정
+     * @param {string} finger - 손가락 이름 (thumb, index, middle, ring, pinky)
+     * @param {number} angle - 각도 (0~180)
+     */
+    setServo: function(finger, angle) {
+        angle = Math.max(0, Math.min(180, Math.floor(angle)));
+        this._servoAngles[finger] = angle;
+        window.ArduinoSerial.sendCommand(`SRV:${finger},${angle}\n`);
+    },
+
+    /**
+     * 모든 서보모터를 같은 각도로 설정
+     * @param {number} angle - 각도 (0~180)
+     */
+    setAllServos: function(angle) {
+        angle = Math.max(0, Math.min(180, Math.floor(angle)));
+        ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(finger => {
+            this._servoAngles[finger] = angle;
+        });
+        window.ArduinoSerial.sendCommand(`SRV:all,${angle}\n`);
+    },
+
+    /**
+     * 서보 각도 읽기 (마지막 설정값)
+     * @param {string} finger
+     * @returns {number}
+     */
+    getServoAngle: function(finger) {
+        return this._servoAngles[finger] || 90;
     },
 
     /** ===================================
@@ -76,7 +125,7 @@ window.SmartFarmHW = {
      *  =================================== */
     
     getRgbType: function() {
-        const saved = localStorage.getItem('smartfarm_pins');
+        const saved = localStorage.getItem(this._getPinStorageKey());
         if (saved) {
             try {
                 const config = JSON.parse(saved);
@@ -105,14 +154,14 @@ window.SmartFarmHW = {
             b = 255 - b;
         }
         
-        window.SmartFarmSerial.sendCommand(`RGB:${r},${g},${b}\n`);
+        window.ArduinoSerial.sendCommand(`RGB:${r},${g},${b}\n`);
     },
     
     turnOffRgbLed: function() {
         if (this.getRgbType() === 'anode') {
-            window.SmartFarmSerial.sendCommand("RGB:255,255,255\n");
+            window.ArduinoSerial.sendCommand("RGB:255,255,255\n");
         } else {
-            window.SmartFarmSerial.sendCommand("RGB:0,0,0\n");
+            window.ArduinoSerial.sendCommand("RGB:0,0,0\n");
         }
     },
 
@@ -120,11 +169,11 @@ window.SmartFarmHW = {
      *  부저 (수동 부저) 제어
      *  =================================== */
     turnOnBuzzer: function(freq = 1000) {
-        window.SmartFarmSerial.sendCommand(`BUZ:${freq}\n`);
+        window.ArduinoSerial.sendCommand(`BUZ:${freq}\n`);
     },
     
     turnOffBuzzer: function() {
-        window.SmartFarmSerial.sendCommand("BUZ:0\n");
+        window.ArduinoSerial.sendCommand("BUZ:0\n");
     },
 
     /** ===================================
@@ -137,6 +186,8 @@ window.SmartFarmHW = {
     sendPinConfig: function(config) {
         const lightType = config.lightType || 'DO';
         const cmd = `CFG:PUMP:${config.pumpDir},${config.pumpPwm},RGB:${config.rgbR},${config.rgbG},${config.rgbB},BUZ:${config.buzzer},DHT:${config.dht},LIG:${config.light},SOIL:${config.soil},LIGHT_TYPE:${lightType}\n`;
-        window.SmartFarmSerial.sendCommand(cmd);
+        window.ArduinoSerial.sendCommand(cmd);
     }
 };
+
+window.SmartFarmHW = window.ArduinoHW;
