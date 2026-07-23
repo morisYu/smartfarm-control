@@ -4,6 +4,25 @@
  * 키트 전용 블록은 각 js/kits/*.js 에서 정의됩니다.
  */
 
+// --- Blockly 한글 변수명/함수명 지원 패치 ---
+if (Blockly.Names && Blockly.Names.prototype) {
+    const originalGetName = Blockly.Names.prototype.getName;
+    Blockly.Names.prototype.getName = function(name, type) {
+        let safeName = originalGetName.call(this, name, type);
+        
+        // Blockly가 유니코드(한글 등)를 URL 인코딩 방식으로 변환(_EC_9D_B4...)한 것을 다시 복원
+        safeName = safeName.replace(/(_[c-fC-F][0-9a-fA-F](?:_[89abAB][0-9a-fA-F])+)+/g, (match) => {
+            try {
+                return decodeURIComponent(match.replace(/_/g, '%'));
+            } catch (e) {
+                return match;
+            }
+        });
+        
+        return safeName;
+    };
+}
+
 // --- 1. 커스텀 블록 정의 ---
 
 Blockly.defineBlocksWithJsonArray([
@@ -430,7 +449,7 @@ Blockly.C.forBlock['procedures_defreturn'] = function(block) {
     }
     const returnType = returnValue ? 'float' : 'void';
     const args = [];
-    const variables = block.getVars();
+    const variables = block.arguments_ || (block.getVarModels ? block.getVarModels().map(v=>v.name) : []);
     for (let i = 0; i < variables.length; i++) {
         args.push('float ' + Blockly.C.nameDB_.getName(variables[i], Blockly.VARIABLE_CATEGORY_NAME));
     }
@@ -446,7 +465,7 @@ Blockly.C.forBlock['procedures_defnoreturn'] = Blockly.C.forBlock['procedures_de
 Blockly.C.forBlock['procedures_callreturn'] = function(block) {
     const funcName = Blockly.C.nameDB_.getName(block.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);
     const args = [];
-    const variables = block.getVars();
+    const variables = block.arguments_ || (block.getVarModels ? block.getVarModels() : []);
     for (let i = 0; i < variables.length; i++) {
         args[i] = Blockly.C.valueToCode(block, 'ARG' + i, Blockly.C.ORDER_NONE) || '0';
     }
@@ -457,7 +476,7 @@ Blockly.C.forBlock['procedures_callreturn'] = function(block) {
 Blockly.C.forBlock['procedures_callnoreturn'] = function(block) {
     const funcName = Blockly.C.nameDB_.getName(block.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);
     const args = [];
-    const variables = block.getVars();
+    const variables = block.arguments_ || (block.getVarModels ? block.getVarModels() : []);
     for (let i = 0; i < variables.length; i++) {
         args[i] = Blockly.C.valueToCode(block, 'ARG' + i, Blockly.C.ORDER_NONE) || '0';
     }
