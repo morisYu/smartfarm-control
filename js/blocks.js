@@ -421,7 +421,10 @@ Blockly.C.forBlock['ard_start'] = function(block) { return '\n'; };
 Blockly.C.forBlock['procedures_defreturn'] = function(block) {
     const funcName = Blockly.C.nameDB_.getName(block.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);
     let branch = Blockly.C.statementToCode(block, 'STACK');
-    let returnValue = Blockly.C.valueToCode(block, 'RETURN', Blockly.C.ORDER_NONE) || '';
+    let returnValue = '';
+    if (block.getInput('RETURN')) {
+        returnValue = Blockly.C.valueToCode(block, 'RETURN', Blockly.C.ORDER_NONE) || '';
+    }
     if (returnValue) {
         returnValue = Blockly.C.INDENT + 'return ' + returnValue + ';\n';
     }
