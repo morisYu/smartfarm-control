@@ -550,7 +550,17 @@ function updateCodePreview(event) {
         if (startBlocks.length > 0) {
             // 시작 블록이 있으면, 시작 블록에 연결된 코드만 생성
             Blockly.JavaScript.init(workspace);
-            jsCode = Blockly.JavaScript.blockToCode(startBlocks[0]);
+            
+            // 함수 정의 블록들을 찾아 미리 변환(definitions_에 추가되도록 함)
+            const topBlocks = workspace.getTopBlocks(true);
+            topBlocks.forEach(block => {
+                if (block.type === 'procedures_defnoreturn' || block.type === 'procedures_defreturn') {
+                    Blockly.JavaScript.blockToCode(block);
+                }
+            });
+
+            let rawJsCode = Blockly.JavaScript.blockToCode(startBlocks[0]);
+            jsCode = Blockly.JavaScript.finish(rawJsCode);
             
             Blockly.C.init(workspace);
             let innerCode = Blockly.C.blockToCode(startBlocks[0]) || '';
@@ -582,7 +592,18 @@ async function runCode() {
         return;
     }
 
-    const jsCode = Blockly.JavaScript.blockToCode(startBlocks[0]);
+    Blockly.JavaScript.init(workspace);
+
+    // 함수 정의 블록들을 찾아 미리 변환
+    const topBlocks = workspace.getTopBlocks(true);
+    topBlocks.forEach(block => {
+        if (block.type === 'procedures_defnoreturn' || block.type === 'procedures_defreturn') {
+            Blockly.JavaScript.blockToCode(block);
+        }
+    });
+
+    const rawJsCode = Blockly.JavaScript.blockToCode(startBlocks[0]);
+    const jsCode = Blockly.JavaScript.finish(rawJsCode);
     if (!jsCode || !jsCode.trim()) {
         alert("시작하기 블록에 연결된 로직이 없습니다.");
         return;
