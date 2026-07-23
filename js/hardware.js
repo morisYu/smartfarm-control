@@ -187,6 +187,37 @@ window.ArduinoHW = {
         const lightType = config.lightType || 'DO';
         const cmd = `CFG:PUMP:${config.pumpDir},${config.pumpPwm},RGB:${config.rgbR},${config.rgbG},${config.rgbB},BUZ:${config.buzzer},DHT:${config.dht},LIG:${config.light},SOIL:${config.soil},LIGHT_TYPE:${lightType}\n`;
         window.ArduinoSerial.sendCommand(cmd);
+    },
+
+    /** ===================================
+     *  Wrapper for smartfarm commands
+     *  =================================== */
+    sendCommand: function(cmd, params = {}) {
+        switch (cmd) {
+            case 'PUMP_ON':
+                this.turnOnPump(0, params.speed || 255);
+                break;
+            case 'PUMP_OFF':
+                this.turnOffPump();
+                break;
+            case 'RGB_SET':
+                this.setRgbLed(params.r || 0, params.g || 0, params.b || 0);
+                break;
+            case 'RGB_OFF':
+                this.turnOffRgbLed();
+                break;
+            case 'BUZZER_ON':
+                this.turnOnBuzzer(params.freq || 1000);
+                break;
+            case 'BUZZER_OFF':
+                this.turnOffBuzzer();
+                break;
+            case 'PING':
+                window.ArduinoSerial.sendCommand('PING\n');
+                break;
+            default:
+                console.warn('Unknown command: ' + cmd);
+        }
     }
 };
 

@@ -149,6 +149,7 @@
 
     // 아두이노 미리보기(C 코드 생성) 오류 방지용 (AI 블록은 PC에서만 동작하므로 주석 또는 기본값 반환)
     if (typeof Blockly.C !== 'undefined') {
+        Blockly.C.forBlock['ai_tts_setup'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 인공지능 TTS 설정\n'; };
         Blockly.C.forBlock['ai_tts'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 인공지능 TTS\n'; };
         Blockly.C.forBlock['ai_hand_start'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 손 인식 카메라 켜기\n'; };
         Blockly.C.forBlock['ai_hand_stop'] = function(block) { return '// PC 전용 기능 (아두이노 코드에는 포함되지 않음): 카메라 끄기\n'; };

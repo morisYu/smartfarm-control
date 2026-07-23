@@ -199,20 +199,28 @@ window.ArduinoSerial = {
         if (this.isWriting) return;
         this.isWriting = true;
 
-        while (this.commandQueue.length > 0) {
-            const cmd = this.commandQueue.shift();
-            try {
-                const encoder = new TextEncoder();
-                const writer = this.port.writable.getWriter();
-                await writer.write(encoder.encode(cmd));
-                writer.releaseLock();
-                this.log('송신: ' + cmd.trim());
-            } catch (error) {
-                this.log('송신 오류: ' + error.message);
+        let writer;
+        try {
+            writer = this.port.writable.getWriter();
+            const encoder = new TextEncoder();
+            
+            while (this.commandQueue.length > 0) {
+                const cmd = this.commandQueue.shift();
+                try {
+                    await writer.write(encoder.encode(cmd));
+                    this.log('송신: ' + cmd.trim());
+                } catch (error) {
+                    this.log('송신 오류: ' + error.message);
+                }
             }
+        } catch (error) {
+            this.log('Writer 획득 오류: ' + error.message);
+        } finally {
+            if (writer) {
+                try { writer.releaseLock(); } catch(e) {}
+            }
+            this.isWriting = false;
         }
-        
-        this.isWriting = false;
     },
 
     /**

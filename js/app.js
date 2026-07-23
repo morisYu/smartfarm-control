@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 현재 키트 상태 ---
     let currentKitId = localStorage.getItem('arduino_current_kit') || 'smartfarm';
+    window.currentKitId = currentKitId;
     let isConnected = false;
     let pumpHeartbeatInterval = null;
 
@@ -223,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!kit) return;
 
         currentKitId = kitId;
+        window.currentKitId = kitId;
         localStorage.setItem('arduino_current_kit', kitId);
         hw.setCurrentKit(kitId);
 
@@ -738,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const fwPath = `firmware/${kit.firmware}/${kit.firmware}.ino.hex`;
-            const response = await fetch(fwPath);
+            const response = await fetch(fwPath + '?t=' + Date.now());
             if (!response.ok) {
                 throw new Error(`펌웨어 파일을 찾을 수 없습니다. (${fwPath})`);
             }
