@@ -131,6 +131,18 @@ Blockly.C.ORDER_LOGICAL_OR    = 14;
 Blockly.C.ORDER_NONE          = 99;
 
 Blockly.C.init = function(workspace) {
+    if (!this.nameDB_) {
+        this.nameDB_ = new Blockly.Names(workspace.variableMap_);
+    } else {
+        this.nameDB_.reset();
+    }
+    this.nameDB_.setVariableMap(workspace.variableMap_);
+    this.nameDB_.populateVariables(workspace);
+    this.nameDB_.populateProcedures(workspace);
+
+    this.definitions_ = Object.create(null);
+    this.setups_ = Object.create(null);
+
     // 코드 생성 시작 시 루프 변수 카운터 초기화 (i, j, k, l, m ...)
     Blockly.C._loopVarIndex = 0;
 };
@@ -404,6 +416,65 @@ Blockly.C.forBlock['controls_repeat_ext'] = function(block) {
 // ── 공통 블록 ─────────────────────────────────────────────
 
 Blockly.C.forBlock['ard_start'] = function(block) { return '\n'; };
+
+// ── 함수(프로시저) ───────────────────────────────────────────────────────────
+Blockly.C.forBlock['procedures_defreturn'] = function(block) {
+    const funcName = Blockly.C.nameDB_.getName(block.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);
+    let branch = Blockly.C.statementToCode(block, 'STACK');
+    let returnValue = Blockly.C.valueToCode(block, 'RETURN', Blockly.C.ORDER_NONE) || '';
+    if (returnValue) {
+        returnValue = Blockly.C.INDENT + 'return ' + returnValue + ';\n';
+    }
+    const returnType = returnValue ? 'float' : 'void';
+    const args = [];
+    const variables = block.getVars();
+    for (let i = 0; i < variables.length; i++) {
+        args.push('float ' + Blockly.C.nameDB_.getName(variables[i], Blockly.VARIABLE_CATEGORY_NAME));
+    }
+    let code = returnType + ' ' + funcName + '(' + args.join(', ') + ') {\n' +
+        branch + returnValue + '}';
+    code = Blockly.C.scrub_(block, code);
+    Blockly.C.definitions_['%' + funcName] = code;
+    return null;
+};
+
+Blockly.C.forBlock['procedures_defnoreturn'] = Blockly.C.forBlock['procedures_defreturn'];
+
+Blockly.C.forBlock['procedures_callreturn'] = function(block) {
+    const funcName = Blockly.C.nameDB_.getName(block.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);
+    const args = [];
+    const variables = block.getVars();
+    for (let i = 0; i < variables.length; i++) {
+        args[i] = Blockly.C.valueToCode(block, 'ARG' + i, Blockly.C.ORDER_NONE) || '0';
+    }
+    const code = funcName + '(' + args.join(', ') + ')';
+    return [code, Blockly.C.ORDER_ATOMIC];
+};
+
+Blockly.C.forBlock['procedures_callnoreturn'] = function(block) {
+    const funcName = Blockly.C.nameDB_.getName(block.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);
+    const args = [];
+    const variables = block.getVars();
+    for (let i = 0; i < variables.length; i++) {
+        args[i] = Blockly.C.valueToCode(block, 'ARG' + i, Blockly.C.ORDER_NONE) || '0';
+    }
+    const code = funcName + '(' + args.join(', ') + ');\n';
+    return code;
+};
+
+Blockly.C.forBlock['procedures_ifreturn'] = function(block) {
+    const condition = Blockly.C.valueToCode(block, 'CONDITION', Blockly.C.ORDER_NONE) || 'false';
+    let code = 'if (' + condition + ') {\n';
+    if (block.hasReturnValue_) {
+        const value = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_NONE) || '0';
+        code += Blockly.C.INDENT + 'return ' + value + ';\n';
+    } else {
+        code += Blockly.C.INDENT + 'return;\n';
+    }
+    code += '}\n';
+    return code;
+};
+
 Blockly.C.forBlock['ard_delay'] = function(block) {
     const sec = Blockly.C.valueToCode(block, 'SEC', Blockly.C.ORDER_ATOMIC) || '1';
     return `  delay((int)((${sec})*1000));\n`;

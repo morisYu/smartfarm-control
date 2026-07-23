@@ -550,22 +550,37 @@ function updateCodePreview(event) {
         if (startBlocks.length > 0) {
             // 시작 블록이 있으면, 시작 블록에 연결된 코드만 생성
             Blockly.JavaScript.init(workspace);
+            Blockly.C.init(workspace);
             
             // 함수 정의 블록들을 찾아 미리 변환(definitions_에 추가되도록 함)
             const topBlocks = workspace.getTopBlocks(true);
             topBlocks.forEach(block => {
                 if (block.type === 'procedures_defnoreturn' || block.type === 'procedures_defreturn') {
                     Blockly.JavaScript.blockToCode(block);
+                    Blockly.C.blockToCode(block);
                 }
             });
 
             let rawJsCode = Blockly.JavaScript.blockToCode(startBlocks[0]);
             jsCode = Blockly.JavaScript.finish(rawJsCode);
             
-            Blockly.C.init(workspace);
             let innerCode = Blockly.C.blockToCode(startBlocks[0]) || '';
             
-            cCode = `void setup() {\n  Serial.begin(115200);\n}\n\nvoid loop() {\n${innerCode.trim() ? innerCode.split('\\n').map(line => '  ' + line).join('\\n') : '  // 코드를 조립하세요'}\n}\n`;
+            let defs = '';
+            if (Blockly.C.definitions_) {
+                for (let name in Blockly.C.definitions_) {
+                    defs += Blockly.C.definitions_[name] + '\n\n';
+                }
+            }
+            
+            let setups = '';
+            if (Blockly.C.setups_) {
+                for (let name in Blockly.C.setups_) {
+                    setups += '  ' + Blockly.C.setups_[name] + '\n';
+                }
+            }
+            
+            cCode = defs + `void setup() {\n  Serial.begin(115200);\n${setups}}\n\nvoid loop() {\n${innerCode.trim() ? innerCode.split('\\n').map(line => '  ' + line).join('\\n') : '  // 코드를 조립하세요'}\n}\n`;
         } else {
             // 없으면 경고 메시지 출력
             jsCode = "// '▶ 시작하기' 블록을 먼저 추가해주세요.\\n";
