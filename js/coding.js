@@ -199,14 +199,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // 미리보기 창 리사이즈 (드래그) 로직
     if (previewResizer && previewSection) {
         let isResizing = false;
+        
+        previewResizer.style.touchAction = 'none'; // 태블릿 등에서 스크롤 간섭 방지
 
-        previewResizer.addEventListener('mousedown', (e) => {
+        previewResizer.addEventListener('pointerdown', (e) => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
             previewSection.style.transition = 'none'; // 드래그 중 부드러운 전환 끄기
+            previewResizer.setPointerCapture(e.pointerId);
+            e.preventDefault();
         });
 
-        document.addEventListener('mousemove', (e) => {
+        document.addEventListener('pointermove', (e) => {
             if (!isResizing) return;
             // 윈도우 우측 끝에서 마우스 X 좌표까지의 거리를 계산 (패딩 및 갭 고려)
             const newWidth = document.body.clientWidth - e.clientX - 16;
@@ -216,13 +220,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        document.addEventListener('mouseup', () => {
+        const stopResize = (e) => {
             if (isResizing) {
                 isResizing = false;
                 document.body.style.cursor = 'default';
                 previewSection.style.transition = ''; // Tailwind transition 클래스 복구
+                if (e.pointerId) {
+                    try { previewResizer.releasePointerCapture(e.pointerId); } catch(err){}
+                }
             }
-        });
+        };
+
+        document.addEventListener('pointerup', stopResize);
+        document.addEventListener('pointercancel', stopResize);
     }
 
     // 탭 전환 로직
@@ -593,7 +603,7 @@ function updateCodePreview(event) {
         document.getElementById('code-preview-c').textContent = cCode;
     } catch (e) {
         console.error("코드 생성 오류:", e);
-        document.getElementById('code-preview-c').textContent = "오류 발생: " + e.message;
+        document.getElementById('code-preview-c').textContent = "오류 발생: " + e.message + "\n\nStack:\n" + e.stack;
     }
 }
 

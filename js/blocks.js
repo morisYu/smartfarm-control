@@ -5,22 +5,37 @@
  */
 
 // --- Blockly 한글 변수명/함수명 지원 패치 ---
+function decodeBlocklyName(safeName) {
+    if (typeof safeName !== 'string') return safeName;
+    return safeName.replace(/(_[c-fC-F][0-9a-fA-F](?:_[89abAB][0-9a-fA-F])+)+/g, (match) => {
+        try {
+            return decodeURIComponent(match.replace(/_/g, '%'));
+        } catch (e) {
+            return match;
+        }
+    });
+}
+
 if (Blockly.Names && Blockly.Names.prototype) {
     const originalGetName = Blockly.Names.prototype.getName;
     Blockly.Names.prototype.getName = function(name, type) {
-        let safeName = originalGetName.call(this, name, type);
-        
-        // Blockly가 유니코드(한글 등)를 URL 인코딩 방식으로 변환(_EC_9D_B4...)한 것을 다시 복원
-        safeName = safeName.replace(/(_[c-fC-F][0-9a-fA-F](?:_[89abAB][0-9a-fA-F])+)+/g, (match) => {
-            try {
-                return decodeURIComponent(match.replace(/_/g, '%'));
-            } catch (e) {
-                return match;
-            }
-        });
-        
-        return safeName;
+        return decodeBlocklyName(originalGetName.call(this, name, type));
     };
+}
+
+if (Blockly.Generator && Blockly.Generator.prototype) {
+    if (Blockly.Generator.prototype.getVariableName) {
+        const originalGetVar = Blockly.Generator.prototype.getVariableName;
+        Blockly.Generator.prototype.getVariableName = function(varId) {
+            return decodeBlocklyName(originalGetVar.call(this, varId));
+        };
+    }
+    if (Blockly.Generator.prototype.getProcedureName) {
+        const originalGetProc = Blockly.Generator.prototype.getProcedureName;
+        Blockly.Generator.prototype.getProcedureName = function(procName) {
+            return decodeBlocklyName(originalGetProc.call(this, procName));
+        };
+    }
 }
 
 // --- 1. 커스텀 블록 정의 ---
@@ -150,17 +165,29 @@ Blockly.C.ORDER_LOGICAL_OR    = 14;
 Blockly.C.ORDER_NONE          = 99;
 
 Blockly.C.init = function(workspace) {
+    const varMap = workspace.getVariableMap();
     if (!this.nameDB_) {
-        this.nameDB_ = new Blockly.Names(workspace.variableMap_);
+        this.nameDB_ = new Blockly.Names('setup,loop,if,else,while,for,return,break,continue,float,int,char,void');
     } else {
         this.nameDB_.reset();
     }
-    this.nameDB_.setVariableMap(workspace.variableMap_);
+    this.nameDB_.setVariableMap(varMap);
     this.nameDB_.populateVariables(workspace);
     this.nameDB_.populateProcedures(workspace);
 
     this.definitions_ = Object.create(null);
     this.setups_ = Object.create(null);
+
+    // 전역 변수 선언
+    const variables = varMap.getAllVariables();
+    if (variables.length) {
+        let defvars = [];
+        for (let i = 0; i < variables.length; i++) {
+            const varName = Blockly.C.getVariableName ? Blockly.C.getVariableName(variables[i].getId()) : Blockly.C.nameDB_.getName(variables[i].getId(), Blockly.VARIABLE_CATEGORY_NAME);
+            defvars.push('float ' + varName + ' = 0;');
+        }
+        this.definitions_['variables'] = defvars.join('\n');
+    }
 
     // 코드 생성 시작 시 루프 변수 카운터 초기화 (i, j, k, l, m ...)
     Blockly.C._loopVarIndex = 0;
@@ -365,14 +392,20 @@ Blockly.C.forBlock['lists_setIndex'] = function(block) {
 
 // ── 변수 ──────────────────────────────────────────────────────────────────
 Blockly.C.forBlock['variables_get'] = function(block) {
-    const name = Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const name = Blockly.C.getVariableName ? Blockly.C.getVariableName(block.getFieldValue('VAR')) : Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
     return [name, Blockly.C.ORDER_ATOMIC];
 };
 Blockly.C.forBlock['variables_set'] = function(block) {
-    const name  = Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const name  = Blockly.C.getVariableName ? Blockly.C.getVariableName(block.getFieldValue('VAR')) : Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
     const value = Blockly.C.valueToCode(block, 'VALUE', Blockly.C.ORDER_ATOMIC) || '0';
-    return `float ${name} = ${value};\n`;
+    return `${name} = ${value};\n`;
 };
+Blockly.C.forBlock['math_change'] = function(block) {
+    const name  = Blockly.C.getVariableName ? Blockly.C.getVariableName(block.getFieldValue('VAR')) : Blockly.C.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const delta = Blockly.C.valueToCode(block, 'DELTA', Blockly.C.ORDER_ADDITIVE) || '0';
+    return `${name} += ${delta};\n`;
+};
+
 
 // ── 조건문 ────────────────────────────────────────────────────────────────
 Blockly.C.forBlock['controls_if'] = function(block) {

@@ -23,6 +23,7 @@ window.AI = (function() {
         
         const dragHeader = document.createElement('div');
         dragHeader.className = 'h-6 bg-violet-600 w-full flex items-center justify-center cursor-move select-none flex-shrink-0';
+        dragHeader.style.touchAction = 'none'; // 태블릿 스크롤 간섭 방지
         dragHeader.innerHTML = '<span class="text-white text-xs font-bold tracking-wide">🖐️ AI Camera</span>';
         
         let isDragging = false;
