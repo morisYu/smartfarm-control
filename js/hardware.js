@@ -94,9 +94,29 @@ window.ArduinoHW = {
      * @param {number} angle - 각도 (0~180)
      */
     setServo: function(finger, angle) {
-        angle = Math.max(0, Math.min(180, Math.floor(angle)));
+        let originalAngle = Math.floor(angle);
+        
+        if (window.currentKitId === 'handino') {
+            let maxAngle = 165;
+            let minAngle = (finger === 'thumb') ? 30 : 15;
+            let clipped = Math.max(minAngle, Math.min(maxAngle, originalAngle));
+            
+            if (originalAngle !== clipped && window.isBlocklyRunning) {
+                // 이미 동일한 에러를 띄웠는지 체크하여 반복 팝업 방지 (간단한 디바운스/쓰로틀링)
+                const now = Date.now();
+                if (!window._lastServoAlert || (now - window._lastServoAlert > 2000)) {
+                    alert(`입력한 각도(${originalAngle}도)가 범위를 벗어났습니다.\n안전한 범위(${minAngle}~${maxAngle}도)로 자동 조정됩니다.`);
+                    window._lastServoAlert = now;
+                }
+            }
+            angle = clipped;
+        } else {
+            angle = Math.max(0, Math.min(180, originalAngle));
+        }
+
         this._servoAngles[finger] = angle;
         window.ArduinoSerial.sendCommand(`SRV:${finger},${angle}\n`);
+        window.dispatchEvent(new CustomEvent('hardware-servo-updated', { detail: { finger, angle } }));
     },
 
     /**
@@ -104,11 +124,33 @@ window.ArduinoHW = {
      * @param {number} angle - 각도 (0~180)
      */
     setAllServos: function(angle) {
-        angle = Math.max(0, Math.min(180, Math.floor(angle)));
-        ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(finger => {
-            this._servoAngles[finger] = angle;
-        });
-        window.ArduinoSerial.sendCommand(`SRV:all,${angle}\n`);
+        let originalAngle = Math.floor(angle);
+        
+        if (window.currentKitId === 'handino') {
+            if ((originalAngle < 15 || originalAngle > 165) && window.isBlocklyRunning) {
+                const now = Date.now();
+                if (!window._lastServoAlert || (now - window._lastServoAlert > 2000)) {
+                    alert(`입력한 각도(${originalAngle}도)가 범위를 벗어났습니다.\n안전한 범위(15~165도, 엄지는 30도)로 자동 조정됩니다.`);
+                    window._lastServoAlert = now;
+                }
+            }
+            
+            let clipped = Math.max(15, Math.min(165, originalAngle));
+            ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(finger => {
+                let min = (finger === 'thumb') ? 30 : 15;
+                this._servoAngles[finger] = Math.max(min, clipped);
+            });
+            
+            window.ArduinoSerial.sendCommand(`SRV:all,${clipped}\n`);
+            window.dispatchEvent(new CustomEvent('hardware-servo-updated', { detail: { finger: 'all', angle: clipped } }));
+        } else {
+            angle = Math.max(0, Math.min(180, originalAngle));
+            ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(finger => {
+                this._servoAngles[finger] = angle;
+            });
+            window.ArduinoSerial.sendCommand(`SRV:all,${angle}\n`);
+            window.dispatchEvent(new CustomEvent('hardware-servo-updated', { detail: { finger: 'all', angle } }));
+        }
     },
 
     /**

@@ -60,31 +60,6 @@ class ArduinoCategory extends Blockly.ToolboxCategory {
                 this.rowDiv_.style.pointerEvents = 'none';
                 this.rowDiv_.style.cursor = 'default';
             }
-
-            // 터치/마우스 이벤트에서 드래그와 클릭(탭)을 명확히 구분
-            let startX = 0, startY = 0, isDragging = false;
-            
-            this.rowDiv_.addEventListener('pointerdown', (e) => {
-                startX = e.clientX;
-                startY = e.clientY;
-                isDragging = false;
-            }, {passive: true});
-
-            this.rowDiv_.addEventListener('pointermove', (e) => {
-                if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
-                    isDragging = true;
-                }
-            }, {passive: true});
-
-            this.rowDiv_.addEventListener('pointerup', (e) => {
-                if (!isDragging) {
-                    // 실제 클릭(탭)으로 판정될 때만 카테고리 선택
-                    if (this.workspace_ && this.workspace_.getToolbox()) {
-                        this.workspace_.getToolbox().setSelectedItem(this);
-                    }
-                }
-                isDragging = false;
-            });
         }
 
         // 아이콘+텍스트 컨테이너를 세로 배치
@@ -164,13 +139,6 @@ class ArduinoCategory extends Blockly.ToolboxCategory {
             /** @type {!Element} */ (this.htmlDiv_),
             Blockly.utils.aria.State.SELECTED, isSelected
         );
-    }
-
-    /** @override - Blockly의 기본 onClick_ 덮어쓰기 (pointerdown 즉시 반응 방지) */
-    onClick_(e) {
-        // Blockly는 기본적으로 pointerdown 시 바로 onClick_을 호출해버립니다.
-        // 드래그(스크롤)와 탭을 구분하기 위해 여기서는 아무것도 하지 않고,
-        // 위 createDom_에 등록한 pointerup 이벤트에서 선택 처리를 합니다.
     }
 }
 

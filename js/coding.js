@@ -153,14 +153,21 @@ function buildToolbox(kit) {
         <block type="ai_hand_is_folded"></block>
         <block type="ai_hand_get_angle"></block>
     </category>`;
-
     xml += `
     <category name="빈칸"></category>
 </xml>`;
 
+    // 태블릿 환경(내비게이션 바 등)을 위해 블록 목록의 가장 하단에 여백 추가
+    // custom 속성이 있는 카테고리(변수, 함수 등)와 빈칸 카테고리는 제외
+    xml = xml.replace(/(<category[^>]*>)([\s\S]*?)<\/category>/gi, function(match, openTag, content) {
+        if (openTag.includes('custom=') || openTag.includes('name="빈칸"')) {
+            return match;
+        }
+        return openTag + content + '        <sep gap="96"></sep>\n    </category>';
+    });
+
     return xml;
 }
-
 // --- 2. 초기화 및 이벤트 리스너 ---
 let workspace;
 let isRunning = false;

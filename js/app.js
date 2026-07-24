@@ -542,11 +542,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (connected) {
             btnConnect.textContent = '연결 해제';
             statusEl.textContent = '연결됨';
-            statusEl.classList.replace('bg-red-500', 'bg-emerald-500');
+            statusEl.classList.remove('bg-red-500/90', 'border-red-400/50');
+            statusEl.classList.add('bg-emerald-500/90', 'border-emerald-400/50');
         } else {
             btnConnect.textContent = '시리얼 연결';
             statusEl.textContent = '연결 끊김';
-            statusEl.classList.replace('bg-emerald-500', 'bg-red-500');
+            statusEl.classList.remove('bg-emerald-500/90', 'border-emerald-400/50');
+            statusEl.classList.add('bg-red-500/90', 'border-red-400/50');
             
             // 센서 값 초기화
             const kit = window.KitRegistry.get(currentKitId);

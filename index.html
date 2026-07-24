@@ -24,14 +24,22 @@
     <script src="https://unpkg.com/blockly@13.0.0/msg/ko.js"></script>
 
     <!-- Blockly 커스텀 카테고리 (Blockly 로드 후, coding.js 전에 로드) -->
-    <script src="js/custom_category.js?v=5"></script>
-    <link rel="stylesheet" href="style.css?v=5">
+    <script src="js/custom_category.js?v=9"></script>
+    <link rel="stylesheet" href="style.css?v=8">
     <style>
         /* 커스텀 스크롤바 */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* 터치 디바이스 (모바일/태블릿) 전용 스타일 */
+        @media (hover: none) and (pointer: coarse) {
+            /* 태블릿 하단 내비게이션 바와 블록이 겹치지 않도록 전체 뷰에 하단 여백 추가 */
+            #view-coding {
+                padding-bottom: 96px !important;
+            }
+        }
 
         /* 태블릿/모바일 가로 모드 하단 안전 영역 */
         .pb-safe {
@@ -231,17 +239,17 @@
         }
     </script>
     <!-- 키트 레지스트리 (가장 먼저 로드) -->
-    <script src="js/kit-registry.js?v=5"></script>
+    <script src="js/kit-registry.js?v=6"></script>
     <!-- 키트 정의 파일들 -->
-    <script src="js/kits/smartfarm.js?v=5"></script>
-    <script src="js/kits/handino.js?v=5"></script>
+    <script src="js/kits/smartfarm.js?v=6"></script>
+    <script src="js/kits/handino.js?v=7"></script>
     <!-- 코어 모듈 -->
-    <script src="js/ai.js?v=5"></script>
-    <script src="js/blocks.js?v=5" defer></script>
-    <script src="js/blocks-ai.js?v=5" defer></script>
-    <script type="module" src="js/coding.js?v=5"></script>
-    <script src="js/serial.js?v=5"></script>
-    <script src="js/hardware.js?v=5"></script>
-    <script type="module" src="js/app.js?v=5"></script>
+    <script src="js/ai.js?v=6"></script>
+    <script src="js/blocks.js?v=6" defer></script>
+    <script src="js/blocks-ai.js?v=6" defer></script>
+    <script type="module" src="js/coding.js?v=10"></script>
+    <script src="js/serial.js?v=7"></script>
+    <script src="js/hardware.js?v=7"></script>
+    <script type="module" src="js/app.js?v=7"></script>
 </body>
 </html>

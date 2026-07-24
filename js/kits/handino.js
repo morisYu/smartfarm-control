@@ -230,11 +230,15 @@
 
         // 연결 시 초기화
         onConnect: function(hw) {
-            // 모든 서보를 90도(중립)로 초기화
+            // 모든 서보를 165도(편 상태)로 초기화
             setTimeout(() => {
-                ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(finger => {
-                    hw.setServo(finger, 90);
-                });
+                if (hw.setAllServos) {
+                    hw.setAllServos(165);
+                } else {
+                    ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(finger => {
+                        hw.setServo(finger, 165);
+                    });
+                }
             }, 100);
         },
 
@@ -445,6 +449,35 @@
                     });
                 }
             });
+
+            // 외부(블록 코딩 등)에서 각도가 변경되었을 때 UI 동기화
+            if (window._handinoServoListener) {
+                window.removeEventListener('hardware-servo-updated', window._handinoServoListener);
+            }
+            window._handinoServoListener = (e) => {
+                const { finger, angle } = e.detail;
+                if (finger === 'all') {
+                    fingers.forEach(f => {
+                        const minAngle = f === 'thumb' ? 30 : 15;
+                        const validAngle = Math.max(angle, minAngle);
+                        const s = document.getElementById(`servo-${f}-angle`);
+                        const v = document.getElementById(`servo-${f}-angle-val`);
+                        if (s) s.value = validAngle;
+                        if (v) v.textContent = validAngle + '°';
+                        updateFingerVisual(f, validAngle);
+                    });
+                    if (allSlider) allSlider.value = angle;
+                    if (allVal) allVal.textContent = angle + '°';
+                } else {
+                    const validAngle = Math.max(angle, finger === 'thumb' ? 30 : 15);
+                    const s = document.getElementById(`servo-${finger}-angle`);
+                    const v = document.getElementById(`servo-${finger}-angle-val`);
+                    if (s) s.value = validAngle;
+                    if (v) v.textContent = validAngle + '°';
+                    updateFingerVisual(finger, validAngle);
+                }
+            };
+            window.addEventListener('hardware-servo-updated', window._handinoServoListener);
         }
     });
 })();

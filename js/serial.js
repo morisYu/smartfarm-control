@@ -220,6 +220,11 @@ window.ArduinoSerial = {
                 try { writer.releaseLock(); } catch(e) {}
             }
             this.isWriting = false;
+            
+            // 만약 writer 정리 중에 큐에 새 명령이 추가되었다면 다시 처리
+            if (this.commandQueue.length > 0) {
+                this.processQueue();
+            }
         }
     },
 
