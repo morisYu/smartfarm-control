@@ -155,10 +155,10 @@
                 return `window.ArduinoHW.setAllServos(${angle});\n`;
             },
             'hd_fist': function(block, jsGen) {
-                return `window.ArduinoHW.setAllServos(0);\n`;
+                return `window.ArduinoHW.setAllServos(15);\n`;
             },
             'hd_open': function(block, jsGen) {
-                return `window.ArduinoHW.setAllServos(180);\n`;
+                return `window.ArduinoHW.setAllServos(165);\n`;
             },
             'hd_servo_get': function(block, jsGen) {
                 const finger = block.getFieldValue('FINGER');
@@ -191,10 +191,10 @@
                 return `  servo_thumb.write(${angle});\n  servo_index.write(${angle});\n  servo_middle.write(${angle});\n  servo_ring.write(${angle});\n  servo_pinky.write(${angle});\n`;
             },
             'hd_fist': function(block, cGen) {
-                return `  servo_thumb.write(0);\n  servo_index.write(0);\n  servo_middle.write(0);\n  servo_ring.write(0);\n  servo_pinky.write(0);\n`;
+                return `  servo_thumb.write(30);\n  servo_index.write(15);\n  servo_middle.write(15);\n  servo_ring.write(15);\n  servo_pinky.write(15);\n`;
             },
             'hd_open': function(block, cGen) {
-                return `  servo_thumb.write(180);\n  servo_index.write(180);\n  servo_middle.write(180);\n  servo_ring.write(180);\n  servo_pinky.write(180);\n`;
+                return `  servo_thumb.write(165);\n  servo_index.write(165);\n  servo_middle.write(165);\n  servo_ring.write(165);\n  servo_pinky.write(165);\n`;
             },
             'hd_servo_get': function(block, cGen) {
                 const finger = block.getFieldValue('FINGER');
