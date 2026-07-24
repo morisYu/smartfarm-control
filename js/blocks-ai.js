@@ -132,10 +132,11 @@
             this.appendDummyInput()
                 .appendField('🖐️ 인식된 손 모양이')
                 .appendField(new Blockly.FieldDropdown([
-                    ['바위 (주먹)', 'rock'],
                     ['가위', 'scissors'],
-                    ['보 (편 손)', 'paper'],
-                    ['사랑해 (ILY)', 'love']
+                    ['바위', 'rock'],
+                    ['보', 'paper'],
+                    ['사랑해', 'love'],
+                    ['최고', 'thumbsUp']
                 ]), 'GESTURE')
                 .appendField('인가?');
             this.setOutput(true, 'Boolean');

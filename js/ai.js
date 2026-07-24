@@ -19,12 +19,49 @@ window.AI = (function() {
         containerElement = document.createElement('div');
         containerElement.id = 'ai-vision-container';
         containerElement.className = 'fixed bottom-4 right-4 w-48 h-36 bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-violet-500 z-50 hidden flex flex-col';
-        containerElement.style.resize = 'both';
+        // 너비와 높이 변경에만 트랜지션을 적용 (드래그 시 left/top에는 적용 안 되게 함)
+        containerElement.style.transition = 'width 0.3s ease, height 0.3s ease';
         
         const dragHeader = document.createElement('div');
-        dragHeader.className = 'h-6 bg-violet-600 w-full flex items-center justify-center cursor-move select-none flex-shrink-0';
+        dragHeader.className = 'h-6 bg-violet-600 w-full flex items-center justify-between cursor-move select-none flex-shrink-0 px-2';
         dragHeader.style.touchAction = 'none'; // 태블릿 스크롤 간섭 방지
-        dragHeader.innerHTML = '<span class="text-white text-xs font-bold tracking-wide">🖐️ AI Camera</span>';
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'text-white text-xs font-bold tracking-wide pointer-events-none';
+        titleSpan.innerHTML = '🖐️ AI Camera';
+        
+        const sizeBtn = document.createElement('button');
+        sizeBtn.className = 'text-white hover:bg-white/20 rounded p-1 transition flex items-center justify-center';
+        // 확대 아이콘 SVG
+        const iconMaximize = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
+        // 축소 아이콘 SVG
+        const iconMinimize = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>';
+        
+        sizeBtn.innerHTML = iconMaximize;
+        
+        sizeBtn.addEventListener('pointerdown', (e) => {
+            e.stopPropagation(); // 헤더의 드래그 이벤트로 전파 방지
+        });
+        
+        let isLarge = false;
+        sizeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isLarge = !isLarge;
+            if (isLarge) {
+                // 3배 크기로 설정 (기존 192x144의 3배 = 576x432)
+                containerElement.style.width = '576px';
+                containerElement.style.height = '432px';
+                sizeBtn.innerHTML = iconMinimize;
+            } else {
+                // 원래 크기로 복귀
+                containerElement.style.width = '';
+                containerElement.style.height = '';
+                sizeBtn.innerHTML = iconMaximize;
+            }
+        });
+        
+        dragHeader.appendChild(titleSpan);
+        dragHeader.appendChild(sizeBtn);
         
         let isDragging = false;
         let startX, startY, initialLeft, initialTop;
@@ -310,6 +347,8 @@ window.AI = (function() {
                     return thumb && !index && !middle && ring && pinky;
                 case 'love': // 검지, 소지, 엄지 폄 / 중지, 약지 접음 (ILY sign)
                     return !thumb && !index && middle && ring && !pinky;
+                case 'thumbsUp': // 최고: 엄지 폄 / 나머지 접음
+                    return !thumb && index && middle && ring && pinky;
                 default:
                     return false;
             }
